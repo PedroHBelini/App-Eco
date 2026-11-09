@@ -15,7 +15,7 @@ interface Props {
 
 const ATALHOS_ML = [200, 300, 500];
 
-export default function HidratacaoScreen({ usuario }: Props) {
+export default function Hidratacao({ usuario }: Props) {
   const [quantidade, setQuantidade] = useState('');
   const [, forcarAtualizacao] = useState(0);
 
