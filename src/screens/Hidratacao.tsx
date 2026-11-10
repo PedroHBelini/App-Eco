@@ -7,6 +7,7 @@ import {
   calcularTotalIngeridoHoje,
   listarIngestoesDoDia,
   registrarIngestao,
+  validarQuantidadeIngestao,
 } from '../data/mockRepository';
 import { Usuario } from '../models/types';
 
@@ -18,6 +19,7 @@ const ATALHOS_ML = [200, 300, 500];
 
 export default function Hidratacao({ usuario }: Props) {
   const [quantidade, setQuantidade] = useState('');
+  const [erro, setErro] = useState('');
   const [, forcarAtualizacao] = useState(0);
 
   const meta = buscarMetaHidratacaoAtiva(usuario.idUsuario);
@@ -26,10 +28,25 @@ export default function Hidratacao({ usuario }: Props) {
   const registros = listarIngestoesDoDia(usuario.idUsuario).slice().reverse();
 
   function adicionar(quantidadeMl: number) {
-    if (quantidadeMl <= 0) return;
+    if (!validarQuantidadeIngestao(quantidadeMl)) {
+      setErro('Informe uma quantidade válida maior que zero.');
+      return;
+    }
+
     registrarIngestao(usuario.idUsuario, quantidadeMl);
     setQuantidade('');
+    setErro('');
     forcarAtualizacao((n) => n + 1);
+  }
+
+  function registrarQuantidadeDigitada() {
+    const entrada = quantidade.trim();
+    if (!/^\d+(?:[.,]\d+)?$/.test(entrada)) {
+      setErro('Informe uma quantidade válida maior que zero.');
+      return;
+    }
+
+    adicionar(Number(entrada.replace(',', '.')));
   }
 
   return (
@@ -59,14 +76,18 @@ export default function Hidratacao({ usuario }: Props) {
             style={styles.input}
             placeholder="Outra quantidade (ml)"
             value={quantidade}
-            onChangeText={setQuantidade}
+            onChangeText={(valor) => {
+              setQuantidade(valor);
+              if (erro) setErro('');
+            }}
             keyboardType="numeric"
           />
-          <TouchableOpacity style={styles.botao} onPress={() => adicionar(Number(quantidade))}>
+          <TouchableOpacity style={styles.botao} onPress={registrarQuantidadeDigitada}>
             <Text style={styles.botaoTexto}>Registrar</Text>
           </TouchableOpacity>
         </View>
 
+        {erro ? <Text style={styles.erro} accessibilityRole="alert">{erro}</Text> : null}
         <Text style={styles.historicoTitulo}>Registros de hoje</Text>
       </View>
       <FlatList
@@ -99,6 +120,7 @@ const styles = StyleSheet.create({
   input: { flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: '#cfe3e8', borderRadius: 8, padding: 12 },
   botao: { backgroundColor: '#173f4f', borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' },
   botaoTexto: { color: '#fff', fontWeight: '600' },
+  erro: { color: '#b33b32', fontSize: 13, marginBottom: 10 },
   historicoTitulo: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#173f4f' },
   lista: { flex: 1 },
   itemHistorico: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#e0eef2' },

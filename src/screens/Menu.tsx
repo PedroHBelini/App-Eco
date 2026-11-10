@@ -9,12 +9,12 @@ interface Props {
 
 export default function Menu({ usuario }: Props) {
   const modulos = [
-    { href: '/hidratacao', titulo: 'Hidratação', detalhe: 'Acompanhe sua meta diária', cor: '#dff3fb' },
-    { href: '/sono', titulo: 'Sono', detalhe: 'Registre sua rotina de descanso', cor: '#e8e9f8' },
-    { href: '/consumo', titulo: 'Consumo residencial', detalhe: 'Água e energia por mês', cor: '#e4f2e7' },
-    { href: '/alertas', titulo: 'Alertas', detalhe: 'Configure seus lembretes', cor: '#fff0d9' },
-    { href: '/relatorios', titulo: 'Relatórios', detalhe: 'Veja sua evolução', cor: '#fbe6e1' },
-    { href: '/gamificacao', titulo: 'Conquistas', detalhe: 'Desafios, medalhas e recordes', cor: '#f2e8d8' },
+    { href: '/hidratacao', titulo: 'Hidratação', cor: '#dff3fb' },
+    { href: '/sono', titulo: 'Sono', cor: '#e8e9f8' },
+    { href: '/consumo', titulo: 'Consumo residencial', cor: '#e4f2e7' },
+    { href: '/alertas', titulo: 'Alertas', cor: '#fff0d9' },
+    { href: '/relatorios', titulo: 'Relatórios', cor: '#fbe6e1' },
+    { href: '/gamificacao', titulo: 'Conquistas', cor: '#f2e8d8' },
   ] as const;
 
   return (
