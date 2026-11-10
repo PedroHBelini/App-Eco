@@ -7,11 +7,11 @@ interface Props {
   onCadastroConcluido: (usuario: Usuario) => void;
 }
 
-export default function CadastroScreen({ onCadastroConcluido }: Props) {
+export default function Cadastro({ onCadastroConcluido }: Props) {
   const [nome, setNome] = useState('');
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
-  const [metaMl, setMetaMl] = useState('');
+  const [metaMl, setMetaMl] = useState('2000');
   const [erro, setErro] = useState('');
 
   function handleCadastrar() {
@@ -34,6 +34,7 @@ export default function CadastroScreen({ onCadastroConcluido }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.titulo}>Hábitos & Sustentabilidade</Text>
+      <Text style={styles.subtitulo}>Crie sua conta e defina sua meta de hidratação</Text>
 
       <TextInput style={styles.input} placeholder="Nome" value={nome} onChangeText={setNome} />
       <TextInput
@@ -53,7 +54,7 @@ export default function CadastroScreen({ onCadastroConcluido }: Props) {
       />
       <TextInput
         style={styles.input}
-        placeholder="Meta diária de hidratação (Ex: 2000 ml)"
+        placeholder="Meta diária de hidratação (ml)"
         value={metaMl}
         onChangeText={setMetaMl}
         keyboardType="numeric"
