@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import ModuloLayout, { moduloStyles } from '../components/ModuloLayout';
 import {
   buscarMetaHidratacaoAtiva,
   calcularProgresso,
@@ -32,42 +33,44 @@ export default function Hidratacao({ usuario }: Props) {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.titulo}>Olá, {usuario.nickname}</Text>
-      <Text style={styles.subtitulo}>
-        Meta diária: {meta ? `${meta.valorMeta} ml` : 'não definida'}
-      </Text>
+    <ModuloLayout
+      titulo={`Olá, ${usuario.nickname}`}
+      descricao={`Meta diária: ${meta ? `${meta.valorMeta} ml` : 'não definida'}`}
+      scrollable={false}
+    >
+      <View style={moduloStyles.secao}>
+        <View style={styles.barraFundo}>
+          <View style={[styles.barraProgresso, { width: `${Math.round(progresso * 100)}%` }]} />
+        </View>
+        <Text style={styles.progressoTexto}>
+          {totalHoje} ml de {meta?.valorMeta ?? 0} ml ({Math.round(progresso * 100)}%)
+        </Text>
 
-      <View style={styles.barraFundo}>
-        <View style={[styles.barraProgresso, { width: `${Math.round(progresso * 100)}%` }]} />
-      </View>
-      <Text style={styles.progressoTexto}>
-        {totalHoje} ml de {meta?.valorMeta ?? 0} ml ({Math.round(progresso * 100)}%)
-      </Text>
+        <View style={styles.atalhos}>
+          {ATALHOS_ML.map((ml) => (
+            <TouchableOpacity key={ml} style={styles.atalhoBotao} onPress={() => adicionar(ml)}>
+              <Text style={styles.atalhoTexto}>+{ml} ml</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      <View style={styles.atalhos}>
-        {ATALHOS_ML.map((ml) => (
-          <TouchableOpacity key={ml} style={styles.atalhoBotao} onPress={() => adicionar(ml)}>
-            <Text style={styles.atalhoTexto}>+{ml} ml</Text>
+        <View style={styles.linhaInput}>
+          <TextInput
+            style={styles.input}
+            placeholder="Outra quantidade (ml)"
+            value={quantidade}
+            onChangeText={setQuantidade}
+            keyboardType="numeric"
+          />
+          <TouchableOpacity style={styles.botao} onPress={() => adicionar(Number(quantidade))}>
+            <Text style={styles.botaoTexto}>Registrar</Text>
           </TouchableOpacity>
-        ))}
-      </View>
+        </View>
 
-      <View style={styles.linhaInput}>
-        <TextInput
-          style={styles.input}
-          placeholder="Outra quantidade (ml)"
-          value={quantidade}
-          onChangeText={setQuantidade}
-          keyboardType="numeric"
-        />
-        <TouchableOpacity style={styles.botao} onPress={() => adicionar(Number(quantidade))}>
-          <Text style={styles.botaoTexto}>Registrar</Text>
-        </TouchableOpacity>
+        <Text style={styles.historicoTitulo}>Registros de hoje</Text>
       </View>
-
-      <Text style={styles.historicoTitulo}>Registros de hoje</Text>
       <FlatList
+        style={styles.lista}
         data={registros}
         keyExtractor={(item) => item.idIngestao}
         renderItem={({ item }) => (
@@ -80,54 +83,25 @@ export default function Hidratacao({ usuario }: Props) {
         )}
         ListEmptyComponent={<Text style={styles.vazio}>Nenhum registro ainda hoje.</Text>}
       />
-    </View>
+    </ModuloLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, paddingTop: 56, backgroundColor: '#f4faff' },
-  titulo: { fontSize: 22, fontWeight: '700', color: '#173f4f' },
-  subtitulo: { fontSize: 14, color: '#4a6572', marginBottom: 16 },
-  barraFundo: {
-    height: 16,
-    backgroundColor: '#e0eef2',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
+  secao: { paddingBottom: 12 },
+  barraFundo: { height: 16, backgroundColor: '#e0eef2', borderRadius: 8, overflow: 'hidden' },
   barraProgresso: { height: '100%', backgroundColor: '#2e8bc0' },
   progressoTexto: { marginTop: 6, marginBottom: 20, color: '#173f4f' },
   atalhos: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  atalhoBotao: {
-    backgroundColor: '#dff3fb',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-  },
+  atalhoBotao: { backgroundColor: '#dff3fb', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8 },
   atalhoTexto: { color: '#173f4f', fontWeight: '600' },
   linhaInput: { flexDirection: 'row', gap: 8, marginBottom: 20 },
-  input: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#cfe3e8',
-    borderRadius: 8,
-    padding: 12,
-  },
-  botao: {
-    backgroundColor: '#173f4f',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-  },
+  input: { flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: '#cfe3e8', borderRadius: 8, padding: 12 },
+  botao: { backgroundColor: '#173f4f', borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' },
   botaoTexto: { color: '#fff', fontWeight: '600' },
   historicoTitulo: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#173f4f' },
-  itemHistorico: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0eef2',
-  },
+  lista: { flex: 1 },
+  itemHistorico: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#e0eef2' },
   horario: { color: '#7b8f99' },
   vazio: { color: '#7b8f99' },
 });

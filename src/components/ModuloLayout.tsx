@@ -1,21 +1,41 @@
 import { Link } from 'expo-router';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface Props {
   titulo: string;
   descricao: string;
   children: React.ReactNode;
+  scrollable?: boolean;
 }
 
-export default function ModuloLayout({ titulo, descricao, children }: Props) {
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Link href="/menu" style={styles.voltar}>Voltar ao menu</Link>
+export default function ModuloLayout({ titulo, descricao, children, scrollable = true }: Props) {
+  const cabecalho = (
+    <>
+      <Link href="/menu" asChild>
+        <TouchableOpacity style={styles.voltarBotao} accessibilityRole="button">
+          <Text style={styles.voltarTexto}>Voltar ao menu</Text>
+        </TouchableOpacity>
+      </Link>
       <View style={styles.cabecalho}>
         <Text style={styles.titulo}>{titulo}</Text>
         <Text style={styles.descricao}>{descricao}</Text>
       </View>
+    </>
+  );
+
+  if (!scrollable) {
+    return (
+      <View style={[styles.container, styles.containerFlexivel]}>
+        {cabecalho}
+        {children}
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      {cabecalho}
       {children}
     </ScrollView>
   );
@@ -51,7 +71,9 @@ export const moduloStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: 24, paddingTop: 48, paddingBottom: 36, backgroundColor: '#f4faff' },
-  voltar: { color: '#28764b', fontSize: 14, fontWeight: '700', marginBottom: 24 },
+  containerFlexivel: { flex: 1 },
+  voltarBotao: { alignSelf: 'flex-start', backgroundColor: '#173f4f', borderRadius: 8, paddingVertical: 11, paddingHorizontal: 16, marginBottom: 24 },
+  voltarTexto: { color: '#fff', fontSize: 14, fontWeight: '700' },
   cabecalho: { marginBottom: 24 },
   titulo: { color: '#173f4f', fontSize: 26, fontWeight: '700' },
   descricao: { color: '#4a6572', fontSize: 14, lineHeight: 20, marginTop: 6 },
