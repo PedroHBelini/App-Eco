@@ -44,7 +44,15 @@ export function buscarMetaHidratacaoAtiva(idUsuario: string): Meta | undefined {
   return metas.find((m) => m.idUsuario === idUsuario && m.tipo === 'HIDRATACAO' && m.ativa);
 }
 
+export function validarQuantidadeIngestao(quantidadeMl: number): boolean {
+  return Number.isFinite(quantidadeMl) && quantidadeMl > 0;
+}
+
 export function registrarIngestao(idUsuario: string, quantidadeMl: number): RegistroIngestaoAgua {
+  if (!validarQuantidadeIngestao(quantidadeMl)) {
+    throw new RangeError('A quantidade de ingestão deve ser um número finito maior que zero.');
+  }
+
   const registro: RegistroIngestaoAgua = {
     idIngestao: gerarId(),
     idUsuario,
