@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
 import ModuloLayout, { moduloStyles as styles } from '../components/ModuloLayout';
-import { listarConsumos, registrarConsumo, unidadeDoRecurso, validarConsumo, verificarMedalhas } from '../data/repository';
+import { listarConsumos, registrarConsumo, unidadeDoRecurso, validarConsumo, atualizarGamificacao } from '../data/repository';
 import { Medalha, TipoRecurso, Usuario } from '../models/types';
 
 interface Props {
@@ -41,7 +41,7 @@ export default function Consumo({ usuario }: Props) {
     );
     registrarConsumo(usuario.idUsuario, recurso, mes, ano, valor);
     setRegistros(listarConsumos(usuario.idUsuario));
-    setNovasMedalhas(verificarMedalhas(usuario.idUsuario));
+    setNovasMedalhas(atualizarGamificacao(usuario.idUsuario));
     setQuantidade('');
     setErro('');
     setFeedback(
