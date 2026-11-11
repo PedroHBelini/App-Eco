@@ -186,7 +186,7 @@ export default function Hidratacao({ usuario }: Props) {
               setQuantidade(valor);
               if (erro) setErro('');
             }}
-            keyboardType="numeric"
+            keyboardType="number-pad"
           />
           <TouchableOpacity style={styles.botao} onPress={registrarQuantidadeDigitada} accessibilityRole="button">
             <Text style={modulo.botaoTexto}>Registrar</Text>

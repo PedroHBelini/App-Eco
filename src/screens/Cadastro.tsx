@@ -60,7 +60,7 @@ export default function Cadastro({ onCadastroConcluido }: Props) {
         placeholder="Meta diária de hidratação (ml)"
         value={metaMl}
         onChangeText={setMetaMl}
-        keyboardType="numeric"
+        keyboardType="number-pad"
       />
 
       {erro ? <Text style={modulo.erro}>{erro}</Text> : null}

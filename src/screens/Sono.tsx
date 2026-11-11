@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
+import CampoDataHora from '../components/CampoDataHora';
 import CampoTexto from '../components/CampoTexto';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import {
@@ -13,7 +14,15 @@ import {
   atualizarGamificacao,
 } from '../data/repository';
 import { Medalha, Usuario } from '../models/types';
-import { formatarDiaMes, formatarHoras } from '../utils/formatacao';
+import {
+  deDataISO,
+  deHorario,
+  formatarDiaMes,
+  formatarDiaRelativo,
+  formatarHoras,
+  paraDataISO,
+  paraHorario,
+} from '../utils/formatacao';
 
 interface Props {
   usuario: Usuario;
@@ -21,10 +30,19 @@ interface Props {
 
 const REGISTROS_NO_HISTORICO = 7;
 
+// Valores que o seletor mostra ao abrir pela primeira vez.
+function horarioInicial(horas: number, minutos: number) {
+  const d = new Date();
+  d.setHours(horas, minutos, 0, 0);
+  return d;
+}
+
 export default function Sono({ usuario }: Props) {
   const styles = useModuloStyles();
   const [dormir, setDormir] = useState('');
   const [acordar, setAcordar] = useState('');
+  // Dia em que acordou; por padrão hoje, mas dá para lançar uma noite anterior.
+  const [dataNoite, setDataNoite] = useState(() => paraDataISO(new Date()));
   const [feedback, setFeedback] = useState('');
   const [erro, setErro] = useState('');
   const [registros, setRegistros] = useState(() => listarRegistrosSono(usuario.idUsuario));
@@ -41,19 +59,28 @@ export default function Sono({ usuario }: Props) {
   const ultimoRegistro = registros[0];
 
   function salvarRegistro() {
-    if (calcularDuracaoSonoMinutos(dormir, acordar) === null) {
-      setErro('Informe horários válidos no formato HH:MM e um período de até 18 horas.');
+    if (!dormir || !acordar) {
+      setErro('Escolha o horário em que dormiu e o horário em que acordou.');
       setFeedback('');
       return;
     }
-    const registro = registrarSono(usuario.idUsuario, dormir, acordar);
+    if (calcularDuracaoSonoMinutos(dormir, acordar) === null) {
+      setErro('O período entre dormir e acordar deve ter até 18 horas.');
+      setFeedback('');
+      return;
+    }
+    const jaExistia = registros.some((r) => r.dataReferencia === dataNoite);
+    const registro = registrarSono(usuario.idUsuario, dormir, acordar, dataNoite);
     setRegistros(listarRegistrosSono(usuario.idUsuario));
     setErro('');
-    setFeedback(`Duração registrada: ${formatarHoras(registro.duracaoHoras)}`);
+    setFeedback(
+      `${jaExistia ? 'Noite atualizada' : 'Noite registrada'} (${formatarDiaRelativo(deDataISO(dataNoite))}): ${formatarHoras(registro.duracaoHoras)}`,
+    );
     setMedalhasDoRegistro(atualizarGamificacao(usuario.idUsuario));
     setMedalhasDaMeta([]);
     setDormir('');
     setAcordar('');
+    setDataNoite(paraDataISO(new Date()));
   }
 
   function salvarMeta() {
@@ -74,11 +101,38 @@ export default function Sono({ usuario }: Props) {
   return (
     <ModuloLayout voltar titulo="Sono" descricao="Registre seus horários e acompanhe a duração do descanso.">
       <View style={styles.secao}>
-        <Text style={styles.secaoTitulo}>Registro da última noite</Text>
+        <Text style={styles.secaoTitulo}>Registrar uma noite</Text>
+        <Text style={styles.rotulo}>Dia em que acordou</Text>
+        <CampoDataHora
+          modo="date"
+          valor={deDataISO(dataNoite)}
+          valorInicial={new Date()}
+          maximumDate={new Date()}
+          onChange={(d) => setDataNoite(paraDataISO(d))}
+          formatar={formatarDiaRelativo}
+          placeholder="Escolher dia"
+          rotuloAcessivel="Dia em que acordou"
+        />
         <Text style={styles.rotulo}>Horário em que dormiu</Text>
-        <CampoTexto placeholder="22:30" value={dormir} onChangeText={setDormir} keyboardType="numbers-and-punctuation" />
+        <CampoDataHora
+          modo="time"
+          valor={deHorario(dormir)}
+          valorInicial={horarioInicial(23, 0)}
+          onChange={(d) => setDormir(paraHorario(d))}
+          formatar={paraHorario}
+          placeholder="Escolher horário"
+          rotuloAcessivel="Horário em que dormiu"
+        />
         <Text style={styles.rotulo}>Horário em que acordou</Text>
-        <CampoTexto placeholder="06:30" value={acordar} onChangeText={setAcordar} keyboardType="numbers-and-punctuation" />
+        <CampoDataHora
+          modo="time"
+          valor={deHorario(acordar)}
+          valorInicial={horarioInicial(7, 0)}
+          onChange={(d) => setAcordar(paraHorario(d))}
+          formatar={paraHorario}
+          placeholder="Escolher horário"
+          rotuloAcessivel="Horário em que acordou"
+        />
         {erro ? <Text style={styles.erro} accessibilityRole="alert">{erro}</Text> : null}
         <TouchableOpacity accessibilityRole="button" onPress={salvarRegistro} style={styles.botao}>
           <Text style={styles.botaoTexto}>Salvar registro</Text>

@@ -282,13 +282,21 @@ export function calcularDuracaoSonoMinutos(horarioDormir: string, horarioAcordar
 }
 
 // Um registro por noite: registrar de novo no mesmo dia substitui o anterior.
-export function registrarSono(idUsuario: string, horarioDormir: string, horarioAcordar: string): RegistroSono {
+// dataReferencia = dia em que acordou (padrão: hoje). Pode ser um dia anterior, nunca futuro.
+export function registrarSono(
+  idUsuario: string,
+  horarioDormir: string,
+  horarioAcordar: string,
+  dataReferencia: string = hojeLocal(),
+): RegistroSono {
   const minutos = calcularDuracaoSonoMinutos(horarioDormir, horarioAcordar);
   if (minutos === null) {
     throw new RangeError('Horários de sono inválidos.');
   }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dataReferencia) || dataReferencia > hojeLocal()) {
+    throw new RangeError('A data da noite não pode ser no futuro.');
+  }
 
-  const dataReferencia = hojeLocal();
   const registro: RegistroSono = {
     idSono: gerarId(),
     idUsuario,
