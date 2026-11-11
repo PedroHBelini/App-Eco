@@ -1,26 +1,40 @@
-import { Link } from 'expo-router';
+import { Ionicons } from '@react-native-vector-icons/ionicons';
+import { router } from 'expo-router';
 import React from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Cores } from '../theme/cores';
-import { useEstilos } from '../theme/TemaContext';
+import { useEstilos, useTema } from '../theme/TemaContext';
 
 interface Props {
   titulo: string;
   descricao: string;
   children: React.ReactNode;
   scrollable?: boolean;
+  voltar?: boolean; // telas abertas por cima das abas mostram a seta de voltar
 }
 
-export default function ModuloLayout({ titulo, descricao, children, scrollable = true }: Props) {
+function voltarParaTelaAnterior() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/inicio');
+}
+
+export default function ModuloLayout({ titulo, descricao, children, scrollable = true, voltar = false }: Props) {
   const styles = useEstilos(criarEstilosLayout);
+  const { cores } = useTema();
 
   const cabecalho = (
     <>
-      <Link href="/menu" asChild>
-        <TouchableOpacity style={styles.voltarBotao} accessibilityRole="button">
-          <Text style={styles.voltarTexto}>Voltar ao menu</Text>
-        </TouchableOpacity>
-      </Link>
+      {voltar ? (
+        <Pressable
+          onPress={voltarParaTelaAnterior}
+          style={({ pressed }) => [styles.voltarBotao, pressed && styles.pressionado]}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
+          hitSlop={8}
+        >
+          <Ionicons name="chevron-back" size={24} color={cores.primaria} />
+        </Pressable>
+      ) : null}
       <View style={styles.cabecalho}>
         <Text style={styles.titulo}>{titulo}</Text>
         <Text style={styles.descricao}>{descricao}</Text>
@@ -126,14 +140,15 @@ function criarEstilosLayout(c: Cores) {
     container: { flexGrow: 1, padding: 20, paddingTop: 24, paddingBottom: 36, backgroundColor: c.fundo },
     containerFlexivel: { flex: 1 },
     voltarBotao: {
-      alignSelf: 'flex-start',
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
       backgroundColor: c.primariaSuave,
-      borderRadius: 10,
-      paddingVertical: 9,
-      paddingHorizontal: 14,
-      marginBottom: 20,
+      marginBottom: 16,
     },
-    voltarTexto: { color: c.primaria, fontSize: 14, fontWeight: '700' },
+    pressionado: { opacity: 0.6 },
     cabecalho: { marginBottom: 20 },
     titulo: { color: c.texto, fontSize: 28, fontWeight: '800', letterSpacing: -0.3 },
     descricao: { color: c.textoSecundario, fontSize: 15, lineHeight: 21, marginTop: 6 },

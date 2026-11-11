@@ -27,3 +27,9 @@ export function diaDaSemana(dataISO: string): string {
 export function nomeMes(mes: number): string {
   return MESES[mes - 1];
 }
+
+// Data de hoje por extenso: 'terça-feira, 11 de novembro'
+export function dataDeHojePorExtenso(): string {
+  const texto = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}

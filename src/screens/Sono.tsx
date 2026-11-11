@@ -72,7 +72,7 @@ export default function Sono({ usuario }: Props) {
   }
 
   return (
-    <ModuloLayout titulo="Sono" descricao="Registre seus horários e acompanhe a duração do descanso.">
+    <ModuloLayout voltar titulo="Sono" descricao="Registre seus horários e acompanhe a duração do descanso.">
       <View style={styles.secao}>
         <Text style={styles.secaoTitulo}>Registro da última noite</Text>
         <Text style={styles.rotulo}>Horário em que dormiu</Text>

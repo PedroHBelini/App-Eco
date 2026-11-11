@@ -8,14 +8,14 @@ export default function CadastroRoute() {
 
   // Usuário já salvo no aparelho: pula o cadastro.
   if (usuario) {
-    return <Redirect href="/menu" />;
+    return <Redirect href="/inicio" />;
   }
 
   return (
     <Cadastro
       onCadastroConcluido={(novoUsuario) => {
         setUsuario(novoUsuario);
-        router.replace('/menu');
+        router.replace('/inicio');
       }}
     />
   );
