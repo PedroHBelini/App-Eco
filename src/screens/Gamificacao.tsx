@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import CartaoDesafio from '../components/CartaoDesafio';
-import ModuloLayout, { moduloStyles as styles } from '../components/ModuloLayout';
+import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import {
   atualizarGamificacao,
   avaliarDesafioDaSemana,
@@ -13,6 +13,8 @@ import {
 } from '../data/repository';
 import { Recorde, TipoRecorde, Usuario } from '../models/types';
 import { formatarDiaMes } from '../utils/formatacao';
+import { Cores } from '../theme/cores';
+import { useEstilos } from '../theme/TemaContext';
 
 interface Props {
   usuario: Usuario;
@@ -44,6 +46,8 @@ function mensagemDoDia(recorde: Recorde, unidade: [string, string]): string {
 }
 
 function CartaoRecorde({ recorde }: { recorde: Recorde }) {
+  const styles = useModuloStyles();
+  const estilos = useEstilos(criarEstilos);
   const textos = TEXTOS_RECORDE[recorde.tipoRecorde];
   const ehNovoRecorde = recorde.sequenciaAtual > 0 && recorde.sequenciaAtual === recorde.maiorSequencia;
 
@@ -75,6 +79,8 @@ function CartaoRecorde({ recorde }: { recorde: Recorde }) {
 }
 
 function ItemMedalha({ situacao }: { situacao: SituacaoMedalha }) {
+  const styles = useModuloStyles();
+  const estilos = useEstilos(criarEstilos);
   const { medalha, dataConquista, progresso } = situacao;
   const conquistada = dataConquista !== null;
   const estado = conquistada
@@ -109,6 +115,8 @@ function ItemMedalha({ situacao }: { situacao: SituacaoMedalha }) {
 }
 
 export default function Gamificacao({ usuario }: Props) {
+  const styles = useModuloStyles();
+  const estilos = useEstilos(criarEstilos);
   const recordes = calcularRecordes(usuario.idUsuario);
   // Ao abrir a tela, libera também medalhas cujo critério já foi atingido (ex.: histórico anterior às medalhas).
   const [medalhas] = useState(() => {
@@ -149,17 +157,19 @@ export default function Gamificacao({ usuario }: Props) {
   );
 }
 
-const estilos = StyleSheet.create({
-  explicacao: { marginBottom: 4 },
-  cartao: { paddingTop: 8 },
-  numeros: { flexDirection: 'row', gap: 12, marginBottom: 8 },
-  numero: { flex: 1, backgroundColor: '#f4faff', borderRadius: 8, padding: 12 },
-  valor: { color: '#173f4f', fontSize: 28, fontWeight: '700' },
-  primeiraMedalha: { paddingTop: 12 },
-  seloBloqueado: { backgroundColor: '#e5ecea' },
-  inicialBloqueada: { color: '#7b8f99' },
-  nomeBloqueado: { color: '#4a6572' },
-  progressoFundo: { height: 6, backgroundColor: '#e0eef2', borderRadius: 3, overflow: 'hidden', marginTop: 8 },
-  progresso: { height: '100%', backgroundColor: '#2e8bc0', borderRadius: 3 },
-  estado: { marginTop: 6 },
-});
+function criarEstilos(c: Cores) {
+  return StyleSheet.create({
+    explicacao: { marginBottom: 4 },
+    cartao: { paddingTop: 8 },
+    numeros: { flexDirection: 'row', gap: 12, marginBottom: 8 },
+    numero: { flex: 1, backgroundColor: c.superficieSuave, borderRadius: 12, padding: 14 },
+    valor: { color: c.texto, fontSize: 28, fontWeight: '700' },
+    primeiraMedalha: { paddingTop: 12 },
+    seloBloqueado: { backgroundColor: c.superficieSuave },
+    inicialBloqueada: { color: c.textoSuave },
+    nomeBloqueado: { color: c.textoSecundario },
+    progressoFundo: { height: 6, backgroundColor: c.superficieSuave, borderRadius: 3, overflow: 'hidden', marginTop: 8 },
+    progresso: { height: '100%', backgroundColor: c.primaria, borderRadius: 3 },
+    estado: { marginTop: 6 },
+  });
+}

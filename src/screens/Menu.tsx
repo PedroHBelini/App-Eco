@@ -1,29 +1,34 @@
 import { Link } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { sombraCartao } from '../components/ModuloLayout';
 import { Usuario } from '../models/types';
+import { Cores } from '../theme/cores';
+import { useEstilos } from '../theme/TemaContext';
 
 interface Props {
   usuario: Usuario;
 }
 
+const MODULOS = [
+  { href: '/hidratacao', titulo: 'Hidratação' },
+  { href: '/sono', titulo: 'Sono' },
+  { href: '/consumo', titulo: 'Consumo residencial' },
+  { href: '/alertas', titulo: 'Alertas' },
+  { href: '/relatorios', titulo: 'Relatórios' },
+  { href: '/gamificacao', titulo: 'Conquistas' },
+] as const;
+
 export default function Menu({ usuario }: Props) {
-  const modulos = [
-    { href: '/hidratacao', titulo: 'Hidratação', cor: '#dff3fb' },
-    { href: '/sono', titulo: 'Sono', cor: '#e8e9f8' },
-    { href: '/consumo', titulo: 'Consumo residencial', cor: '#e4f2e7' },
-    { href: '/alertas', titulo: 'Alertas', cor: '#fff0d9' },
-    { href: '/relatorios', titulo: 'Relatórios', cor: '#fbe6e1' },
-    { href: '/gamificacao', titulo: 'Conquistas', cor: '#f2e8d8' },
-  ] as const;
+  const styles = useEstilos(criarEstilos);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.titulo}>Olá, {usuario.nickname}</Text>
       <Text style={styles.subtitulo}>Seu espaço de saúde e sustentabilidade</Text>
       <View style={styles.lista}>
-        {modulos.map((modulo) => (
-          <Link key={modulo.href} href={modulo.href} style={[styles.item, { backgroundColor: modulo.cor }]}>
+        {MODULOS.map((modulo) => (
+          <Link key={modulo.href} href={modulo.href} style={styles.item}>
             <Text style={styles.itemTitulo}>{modulo.titulo}</Text>
           </Link>
         ))}
@@ -32,16 +37,20 @@ export default function Menu({ usuario }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 24, paddingTop: 56, backgroundColor: '#f4faff' },
-  titulo: { fontSize: 22, fontWeight: '700', color: '#173f4f' },
-  subtitulo: { fontSize: 14, color: '#4a6572', marginTop: 4, marginBottom: 24 },
-  lista: { gap: 12 },
-  item: {
-    borderWidth: 1,
-    borderColor: '#d3e2e2',
-    borderRadius: 8,
-    padding: 18,
-  },
-  itemTitulo: { fontSize: 17, fontWeight: '700', color: '#173f4f' },
-});
+function criarEstilos(c: Cores) {
+  return StyleSheet.create({
+    container: { flexGrow: 1, padding: 20, paddingTop: 32, backgroundColor: c.fundo },
+    titulo: { fontSize: 28, fontWeight: '800', color: c.texto, letterSpacing: -0.3 },
+    subtitulo: { fontSize: 15, color: c.textoSecundario, marginTop: 4, marginBottom: 24 },
+    lista: { gap: 12 },
+    item: {
+      backgroundColor: c.superficie,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.borda,
+      borderRadius: 14,
+      padding: 18,
+      ...sombraCartao(c),
+    },
+    itemTitulo: { fontSize: 17, fontWeight: '700', color: c.texto },
+  });
+}

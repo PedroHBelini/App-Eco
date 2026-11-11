@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import CampoTexto from '../components/CampoTexto';
+import { useModuloStyles } from '../components/ModuloLayout';
 import { cadastrarUsuario, definirMetaHidratacao } from '../data/repository';
 import { Usuario } from '../models/types';
+import { Cores } from '../theme/cores';
+import { useEstilos } from '../theme/TemaContext';
 
 interface Props {
   onCadastroConcluido: (usuario: Usuario) => void;
 }
 
 export default function Cadastro({ onCadastroConcluido }: Props) {
+  const styles = useEstilos(criarEstilos);
+  const modulo = useModuloStyles();
   const [nome, setNome] = useState('');
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
@@ -36,52 +42,40 @@ export default function Cadastro({ onCadastroConcluido }: Props) {
       <Text style={styles.titulo}>Hábitos & Sustentabilidade</Text>
       <Text style={styles.subtitulo}>Crie sua conta e defina sua meta de hidratação</Text>
 
-      <TextInput style={styles.input} placeholder="Nome" value={nome} onChangeText={setNome} />
-      <TextInput
-        style={styles.input}
+      <CampoTexto placeholder="Nome" value={nome} onChangeText={setNome} />
+      <CampoTexto
         placeholder="Nickname (exibido nos rankings)"
         value={nickname}
         onChangeText={setNickname}
         autoCapitalize="none"
       />
-      <TextInput
-        style={styles.input}
+      <CampoTexto
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
       />
-      <TextInput
-        style={styles.input}
+      <CampoTexto
         placeholder="Meta diária de hidratação (ml)"
         value={metaMl}
         onChangeText={setMetaMl}
         keyboardType="numeric"
       />
 
-      {erro ? <Text style={styles.erro}>{erro}</Text> : null}
+      {erro ? <Text style={modulo.erro}>{erro}</Text> : null}
 
-      <TouchableOpacity style={styles.botao} onPress={handleCadastrar}>
-        <Text style={styles.botaoTexto}>Criar conta</Text>
+      <TouchableOpacity style={modulo.botao} onPress={handleCadastrar} accessibilityRole="button">
+        <Text style={modulo.botaoTexto}>Criar conta</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#f4faff' },
-  titulo: { fontSize: 24, fontWeight: '700', color: '#173f4f', marginBottom: 4 },
-  subtitulo: { fontSize: 14, color: '#4a6572', marginBottom: 24 },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#cfe3e8',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  erro: { color: '#c0392b', marginBottom: 12 },
-  botao: { backgroundColor: '#173f4f', borderRadius: 8, padding: 14, alignItems: 'center' },
-  botaoTexto: { color: '#fff', fontWeight: '600', fontSize: 16 },
-});
+function criarEstilos(c: Cores) {
+  return StyleSheet.create({
+    container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: c.fundo },
+    titulo: { fontSize: 28, fontWeight: '800', color: c.texto, marginBottom: 6, letterSpacing: -0.3 },
+    subtitulo: { fontSize: 15, color: c.textoSecundario, marginBottom: 28 },
+  });
+}

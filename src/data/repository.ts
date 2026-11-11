@@ -19,6 +19,7 @@ import {
 } from '../models/types';
 import { BONUS_CONCLUSAO, CATALOGO_DESAFIOS, ModeloDeDesafio, PONTOS_POR_DIA } from './catalogoDesafios';
 import { CATALOGO_MEDALHAS } from './catalogoMedalhas';
+import { ModoTema } from '../theme/cores';
 
 const CHAVE_BANCO = '@appeco/banco';
 const VERSAO_BANCO = 1;
@@ -26,6 +27,7 @@ const VERSAO_BANCO = 1;
 interface Banco {
   versao: number;
   idUsuarioSessao: string | null;
+  tema: ModoTema; // preferência do aparelho, não do usuário
   usuarios: Usuario[];
   metas: Meta[];
   ingestoes: RegistroIngestaoAgua[];
@@ -41,6 +43,7 @@ function bancoVazio(): Banco {
   return {
     versao: VERSAO_BANCO,
     idUsuarioSessao: null,
+    tema: 'claro',
     usuarios: [],
     metas: [],
     ingestoes: [],
@@ -103,6 +106,17 @@ export function buscarUsuarioDaSessao(): Usuario | null {
 
 export function definirUsuarioDaSessao(idUsuario: string | null): void {
   banco.idUsuarioSessao = idUsuario;
+  persistir();
+}
+
+// ---- Aparência ----
+
+export function buscarTema(): ModoTema {
+  return banco.tema;
+}
+
+export function definirTema(tema: ModoTema): void {
+  banco.tema = tema;
   persistir();
 }
 

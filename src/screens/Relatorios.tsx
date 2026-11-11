@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import GraficoBarras, { BarraGrafico } from '../components/GraficoBarras';
-import ModuloLayout, { moduloStyles } from '../components/ModuloLayout';
+import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import {
   buscarMetaHidratacaoAtiva,
   buscarMetaSonoAtiva,
@@ -13,6 +13,8 @@ import {
   unidadeDoRecurso,
 } from '../data/repository';
 import { TipoRecurso, Usuario } from '../models/types';
+import { Cores } from '../theme/cores';
+import { useEstilos } from '../theme/TemaContext';
 import { diaDaSemana, formatarDiaMes, formatarHoras, formatarNumero, nomeMes } from '../utils/formatacao';
 
 interface Props {
@@ -44,6 +46,7 @@ function resumir(pontos: PontoDiario[]) {
 }
 
 function Indicador({ rotulo, valor }: { rotulo: string; valor: string }) {
+  const styles = useEstilos(criarEstilos);
   return (
     <View style={styles.indicador}>
       <Text style={styles.indicadorRotulo}>{rotulo}</Text>
@@ -64,6 +67,8 @@ function comparacaoMensal(pontos: PontoMensal[], unidade: string): string | null
 }
 
 function GraficoConsumo({ usuario, tipo, titulo }: { usuario: Usuario; tipo: TipoRecurso; titulo: string }) {
+  const moduloStyles = useModuloStyles();
+  const styles = useEstilos(criarEstilos);
   const unidade = unidadeDoRecurso(tipo);
   const pontos = serieConsumoMensal(usuario.idUsuario, tipo, MESES_DE_CONSUMO);
   if (pontos.every((p) => p.valor === null)) return null;
@@ -90,6 +95,8 @@ function GraficoConsumo({ usuario, tipo, titulo }: { usuario: Usuario; tipo: Tip
 }
 
 export default function Relatorios({ usuario }: Props) {
+  const moduloStyles = useModuloStyles();
+  const styles = useEstilos(criarEstilos);
   const [periodo, setPeriodo] = useState<Periodo>('SEMANA');
   const dias = DIAS_POR_PERIODO[periodo];
 
@@ -209,12 +216,14 @@ export default function Relatorios({ usuario }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  indicadores: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  indicador: { flex: 1, backgroundColor: '#f4faff', borderRadius: 8, padding: 12 },
-  indicadorRotulo: { color: '#4a6572', fontSize: 12 },
-  indicadorValor: { color: '#173f4f', fontSize: 20, fontWeight: '700', marginTop: 2 },
-  legendaConsumo: { marginBottom: 12 },
-  blocoConsumo: { marginBottom: 16 },
-  comparacao: { marginBottom: 10 },
-});
+function criarEstilos(c: Cores) {
+  return StyleSheet.create({
+    indicadores: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+    indicador: { flex: 1, backgroundColor: c.superficieSuave, borderRadius: 12, padding: 14 },
+    indicadorRotulo: { color: c.textoSecundario, fontSize: 12 },
+    indicadorValor: { color: c.texto, fontSize: 20, fontWeight: '700', marginTop: 2 },
+    legendaConsumo: { marginBottom: 12 },
+    blocoConsumo: { marginBottom: 16 },
+    comparacao: { marginBottom: 10 },
+  });
+}

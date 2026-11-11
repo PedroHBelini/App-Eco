@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { buscarUsuarioDaSessao, carregarBanco, definirUsuarioDaSessao } from '../data/repository';
 import { Usuario } from '../models/types';
+import { TEMAS } from '../theme/cores';
 
 interface UsuarioContextValue {
   usuario: Usuario | null;
@@ -34,8 +35,8 @@ export function UsuarioProvider({ children }: { children: React.ReactNode }) {
   // Segura as rotas até o banco carregar; senão elas veriam usuario = null e voltariam ao cadastro.
   if (carregando) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f4faff' }}>
-        <ActivityIndicator color="#173f4f" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: TEMAS.claro.fundo }}>
+        <ActivityIndicator color={TEMAS.claro.primaria} />
       </View>
     );
   }

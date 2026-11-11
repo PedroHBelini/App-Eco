@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
-import ModuloLayout, { moduloStyles as styles } from '../components/ModuloLayout';
+import CampoTexto from '../components/CampoTexto';
+import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import {
   buscarMetaSonoAtiva,
   calcularDuracaoSonoMinutos,
@@ -21,6 +22,7 @@ interface Props {
 const REGISTROS_NO_HISTORICO = 7;
 
 export default function Sono({ usuario }: Props) {
+  const styles = useModuloStyles();
   const [dormir, setDormir] = useState('');
   const [acordar, setAcordar] = useState('');
   const [feedback, setFeedback] = useState('');
@@ -74,9 +76,9 @@ export default function Sono({ usuario }: Props) {
       <View style={styles.secao}>
         <Text style={styles.secaoTitulo}>Registro da última noite</Text>
         <Text style={styles.rotulo}>Horário em que dormiu</Text>
-        <TextInput style={styles.input} placeholder="22:30" value={dormir} onChangeText={setDormir} keyboardType="numbers-and-punctuation" />
+        <CampoTexto placeholder="22:30" value={dormir} onChangeText={setDormir} keyboardType="numbers-and-punctuation" />
         <Text style={styles.rotulo}>Horário em que acordou</Text>
-        <TextInput style={styles.input} placeholder="06:30" value={acordar} onChangeText={setAcordar} keyboardType="numbers-and-punctuation" />
+        <CampoTexto placeholder="06:30" value={acordar} onChangeText={setAcordar} keyboardType="numbers-and-punctuation" />
         {erro ? <Text style={styles.erro} accessibilityRole="alert">{erro}</Text> : null}
         <TouchableOpacity accessibilityRole="button" onPress={salvarRegistro} style={styles.botao}>
           <Text style={styles.botaoTexto}>Salvar registro</Text>
@@ -95,8 +97,7 @@ export default function Sono({ usuario }: Props) {
           </Text>
         ) : null}
         <Text style={styles.rotulo}>Horas mínimas por noite</Text>
-        <TextInput
-          style={styles.input}
+        <CampoTexto
           placeholder="8"
           value={metaHoras}
           onChangeText={(valor) => {

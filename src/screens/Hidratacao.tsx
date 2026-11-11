@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
-import ModuloLayout, { moduloStyles } from '../components/ModuloLayout';
+import CampoTexto from '../components/CampoTexto';
+import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import {
+  atualizarGamificacao,
   buscarMetaHidratacaoAtiva,
   calcularProgresso,
   calcularTotalIngeridoHoje,
   listarIngestoesDoDia,
   registrarIngestao,
   validarQuantidadeIngestao,
-  atualizarGamificacao,
 } from '../data/repository';
 import { Medalha, Usuario } from '../models/types';
+import { Cores } from '../theme/cores';
+import { useEstilos } from '../theme/TemaContext';
 
 interface Props {
   usuario: Usuario;
@@ -20,6 +23,8 @@ interface Props {
 const ATALHOS_ML = [200, 300, 500];
 
 export default function Hidratacao({ usuario }: Props) {
+  const styles = useEstilos(criarEstilos);
+  const modulo = useModuloStyles();
   const [quantidade, setQuantidade] = useState('');
   const [erro, setErro] = useState('');
   const [novasMedalhas, setNovasMedalhas] = useState<Medalha[]>([]);
@@ -55,11 +60,11 @@ export default function Hidratacao({ usuario }: Props) {
 
   return (
     <ModuloLayout
-      titulo={`Olá, ${usuario.nickname}`}
+      titulo="Hidratação"
       descricao={`Meta diária: ${meta ? `${meta.valorMeta} ml` : 'não definida'}`}
       scrollable={false}
     >
-      <View style={moduloStyles.secao}>
+      <View style={modulo.secao}>
         <View style={styles.barraFundo}>
           <View style={[styles.barraProgresso, { width: `${Math.round(progresso * 100)}%` }]} />
         </View>
@@ -69,14 +74,19 @@ export default function Hidratacao({ usuario }: Props) {
 
         <View style={styles.atalhos}>
           {ATALHOS_ML.map((ml) => (
-            <TouchableOpacity key={ml} style={styles.atalhoBotao} onPress={() => adicionar(ml)}>
+            <TouchableOpacity
+              key={ml}
+              style={styles.atalhoBotao}
+              onPress={() => adicionar(ml)}
+              accessibilityRole="button"
+            >
               <Text style={styles.atalhoTexto}>+{ml} ml</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         <View style={styles.linhaInput}>
-          <TextInput
+          <CampoTexto
             style={styles.input}
             placeholder="Outra quantidade (ml)"
             value={quantidade}
@@ -86,49 +96,57 @@ export default function Hidratacao({ usuario }: Props) {
             }}
             keyboardType="numeric"
           />
-          <TouchableOpacity style={styles.botao} onPress={registrarQuantidadeDigitada}>
-            <Text style={styles.botaoTexto}>Registrar</Text>
+          <TouchableOpacity style={styles.botao} onPress={registrarQuantidadeDigitada} accessibilityRole="button">
+            <Text style={modulo.botaoTexto}>Registrar</Text>
           </TouchableOpacity>
         </View>
 
-        {erro ? <Text style={styles.erro} accessibilityRole="alert">{erro}</Text> : null}
+        {erro ? <Text style={modulo.erro} accessibilityRole="alert">{erro}</Text> : null}
         <AvisoMedalha medalhas={novasMedalhas} />
-        <Text style={styles.historicoTitulo}>Registros de hoje</Text>
       </View>
+      <Text style={styles.historicoTitulo}>Registros de hoje</Text>
       <FlatList
         style={styles.lista}
         data={registros}
         keyExtractor={(item) => item.idIngestao}
         renderItem={({ item }) => (
           <View style={styles.itemHistorico}>
-            <Text>{item.quantidadeMl} ml</Text>
-            <Text style={styles.horario}>
-              {new Date(item.dataHora).toLocaleTimeString().slice(0, 5)}
-            </Text>
+            <Text style={modulo.valor}>{item.quantidadeMl} ml</Text>
+            <Text style={styles.horario}>{new Date(item.dataHora).toLocaleTimeString().slice(0, 5)}</Text>
           </View>
         )}
-        ListEmptyComponent={<Text style={styles.vazio}>Nenhum registro ainda hoje.</Text>}
+        ListEmptyComponent={<Text style={styles.horario}>Nenhum registro ainda hoje.</Text>}
       />
     </ModuloLayout>
   );
 }
 
-const styles = StyleSheet.create({
-  secao: { paddingBottom: 12 },
-  barraFundo: { height: 16, backgroundColor: '#e0eef2', borderRadius: 8, overflow: 'hidden' },
-  barraProgresso: { height: '100%', backgroundColor: '#2e8bc0' },
-  progressoTexto: { marginTop: 6, marginBottom: 20, color: '#173f4f' },
-  atalhos: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  atalhoBotao: { backgroundColor: '#dff3fb', paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8 },
-  atalhoTexto: { color: '#173f4f', fontWeight: '600' },
-  linhaInput: { flexDirection: 'row', gap: 8, marginBottom: 20 },
-  input: { flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: '#cfe3e8', borderRadius: 8, padding: 12 },
-  botao: { backgroundColor: '#173f4f', borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' },
-  botaoTexto: { color: '#fff', fontWeight: '600' },
-  erro: { color: '#b33b32', fontSize: 13, marginBottom: 10 },
-  historicoTitulo: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#173f4f' },
-  lista: { flex: 1 },
-  itemHistorico: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#e0eef2' },
-  horario: { color: '#7b8f99' },
-  vazio: { color: '#7b8f99' },
-});
+function criarEstilos(c: Cores) {
+  return StyleSheet.create({
+    barraFundo: { height: 14, backgroundColor: c.superficieSuave, borderRadius: 7, overflow: 'hidden' },
+    barraProgresso: { height: '100%', backgroundColor: c.primaria, borderRadius: 7 },
+    progressoTexto: { marginTop: 8, marginBottom: 18, color: c.texto, fontWeight: '600' },
+    atalhos: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+    atalhoBotao: {
+      flex: 1,
+      alignItems: 'center',
+      backgroundColor: c.primariaSuave,
+      paddingVertical: 11,
+      borderRadius: 10,
+    },
+    atalhoTexto: { color: c.primaria, fontWeight: '700' },
+    linhaInput: { flexDirection: 'row', gap: 8 },
+    input: { flex: 1, marginBottom: 0 },
+    botao: { backgroundColor: c.primaria, borderRadius: 10, paddingHorizontal: 18, justifyContent: 'center' },
+    historicoTitulo: { fontSize: 17, fontWeight: '700', marginTop: 4, marginBottom: 8, color: c.texto },
+    lista: { flex: 1 },
+    itemHistorico: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.borda,
+    },
+    horario: { color: c.textoSuave },
+  });
+}

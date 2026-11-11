@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
-import ModuloLayout, { moduloStyles as styles } from '../components/ModuloLayout';
+import CampoTexto from '../components/CampoTexto';
+import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import { listarConsumos, registrarConsumo, unidadeDoRecurso, validarConsumo, atualizarGamificacao } from '../data/repository';
 import { Medalha, TipoRecurso, Usuario } from '../models/types';
 
@@ -14,6 +15,7 @@ function nomeRecurso(tipo: TipoRecurso): string {
 }
 
 export default function Consumo({ usuario }: Props) {
+  const styles = useModuloStyles();
   const agora = new Date();
   const [recurso, setRecurso] = useState<TipoRecurso>('ENERGIA');
   const [periodo, setPeriodo] = useState(`${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`);
@@ -61,9 +63,9 @@ export default function Consumo({ usuario }: Props) {
           ))}
         </View>
         <Text style={styles.rotulo}>Mês de referência</Text>
-        <TextInput style={styles.input} value={periodo} onChangeText={setPeriodo} placeholder="AAAA-MM" />
+        <CampoTexto value={periodo} onChangeText={setPeriodo} placeholder="AAAA-MM" />
         <Text style={styles.rotulo}>Consumo ({unidadeDoRecurso(recurso)})</Text>
-        <TextInput style={styles.input} value={quantidade} onChangeText={setQuantidade} keyboardType="decimal-pad" placeholder="Ex.: 125,5" />
+        <CampoTexto value={quantidade} onChangeText={setQuantidade} keyboardType="decimal-pad" placeholder="Ex.: 125,5" />
         {erro ? <Text style={styles.erro} accessibilityRole="alert">{erro}</Text> : null}
         <TouchableOpacity onPress={salvarRegistro} style={styles.botao}>
           <Text style={styles.botaoTexto}>Registrar consumo</Text>
