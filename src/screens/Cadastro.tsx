@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import { Image, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import CampoTexto from '../components/CampoTexto';
 import { DISTANCIA_DO_TECLADO, useModuloStyles } from '../components/ModuloLayout';
@@ -49,7 +49,14 @@ export default function Cadastro({ onCadastroConcluido }: Props) {
       keyboardShouldPersistTaps="handled"
       bottomOffset={DISTANCIA_DO_TECLADO}
     >
-      <Text style={styles.titulo}>Hábitos & Sustentabilidade</Text>
+      <Image
+        source={require('../../assets/logo.png')}
+        style={styles.logo}
+        accessibilityIgnoresInvertColors
+        accessible={false}
+      />
+      <Text style={styles.titulo}>Ciclo</Text>
+      <Text style={styles.slogan}>Hábitos que cuidam de você e do planeta</Text>
       <Text style={styles.subtitulo}>Crie sua conta e defina sua meta de hidratação</Text>
 
       <CampoTexto
@@ -103,7 +110,9 @@ export default function Cadastro({ onCadastroConcluido }: Props) {
 function criarEstilos(c: Cores) {
   return StyleSheet.create({
     container: { flexGrow: 1, justifyContent: 'center', padding: 24, backgroundColor: c.fundo },
-    titulo: { fontSize: 28, fontWeight: '800', color: c.texto, marginBottom: 6, letterSpacing: -0.3 },
-    subtitulo: { fontSize: 15, color: c.textoSecundario, marginBottom: 28 },
+    logo: { width: 88, height: 88, alignSelf: 'center', marginBottom: 12 },
+    titulo: { fontSize: 32, fontWeight: '800', color: c.texto, textAlign: 'center', letterSpacing: -0.5 },
+    slogan: { fontSize: 15, color: c.primaria, fontWeight: '600', textAlign: 'center', marginBottom: 24 },
+    subtitulo: { fontSize: 15, color: c.textoSecundario, marginBottom: 16 },
   });
 }
