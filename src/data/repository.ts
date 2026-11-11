@@ -342,3 +342,83 @@ export function definirAlertaHabilitado(idUsuario: string, tipoAlerta: TipoAlert
   );
   persistir();
 }
+
+// ---- Relatórios ----
+
+export interface PontoDiario {
+  data: string; // AAAA-MM-DD
+  valor: number | null; // null = sem dado para o dia (antes do cadastro ou noite não registrada)
+  meta: number | null; // meta vigente naquele dia
+}
+
+export interface PontoMensal {
+  ano: number;
+  mes: number;
+  valor: number | null;
+}
+
+// Últimos `quantidade` dias (incluindo hoje), do mais antigo para o mais recente.
+function ultimosDias(quantidade: number): string[] {
+  const hoje = new Date();
+  return Array.from({ length: quantidade }, (_, i) =>
+    dataLocal(new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - (quantidade - 1 - i))),
+  );
+}
+
+// Meta que valia na data: a mais recente com dataInicio até aquele dia.
+function metaVigenteEm(idUsuario: string, tipo: TipoMeta, data: string): number | null {
+  let valor: number | null = null;
+  for (const m of banco.metas) {
+    if (m.idUsuario === idUsuario && m.tipo === tipo && m.dataInicio <= data) {
+      valor = m.valorMeta;
+    }
+  }
+  return valor;
+}
+
+function dataCadastroLocal(idUsuario: string): string | null {
+  const usuario = banco.usuarios.find((u) => u.idUsuario === idUsuario);
+  return usuario ? dataLocal(new Date(usuario.dataCadastro)) : null;
+}
+
+export function serieHidratacao(idUsuario: string, dias: number): PontoDiario[] {
+  const totais = new Map<string, number>();
+  for (const i of banco.ingestoes) {
+    if (i.idUsuario !== idUsuario) continue;
+    const dia = dataLocal(new Date(i.dataHora));
+    totais.set(dia, (totais.get(dia) ?? 0) + i.quantidadeMl);
+  }
+  const inicio = dataCadastroLocal(idUsuario);
+
+  return ultimosDias(dias).map((data) => ({
+    data,
+    // Dias depois do cadastro sem registro contam como 0 ml; antes do cadastro não há dado.
+    valor: totais.get(data) ?? (inicio !== null && data >= inicio ? 0 : null),
+    meta: metaVigenteEm(idUsuario, 'HIDRATACAO', data),
+  }));
+}
+
+export function serieSono(idUsuario: string, dias: number): PontoDiario[] {
+  const porDia = new Map(
+    banco.registrosSono.filter((r) => r.idUsuario === idUsuario).map((r) => [r.dataReferencia, r.duracaoHoras]),
+  );
+  return ultimosDias(dias).map((data) => ({
+    data,
+    valor: porDia.get(data) ?? null,
+    meta: metaVigenteEm(idUsuario, 'SONO', data),
+  }));
+}
+
+// Últimos `meses` meses (incluindo o atual), do mais antigo para o mais recente.
+export function serieConsumoMensal(idUsuario: string, tipo: TipoRecurso, meses: number): PontoMensal[] {
+  const hoje = new Date();
+  return Array.from({ length: meses }, (_, i) => {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - (meses - 1 - i), 1);
+    const ano = d.getFullYear();
+    const mes = d.getMonth() + 1;
+    const registro = banco.consumos.find(
+      (c) => c.idUsuario === idUsuario && c.tipoRecurso === tipo && c.anoReferencia === ano && c.mesReferencia === mes,
+    );
+    return { ano, mes, valor: registro?.quantidade ?? null };
+  });
+}
