@@ -1,7 +1,7 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, AppState, Linking, Pressable, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { AppState, Linking, Platform, Pressable, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import CampoDataHora from '../components/CampoDataHora';
 import CampoTexto from '../components/CampoTexto';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
@@ -30,6 +30,7 @@ import { Cores } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
 import { formatarHoras, formatarNumero } from '../utils/formatacao';
 import { deHorario, paraHorario } from '../utils/datas';
+import { confirmar } from '../utils/confirmar';
 import { lerNumero } from '../utils/entrada';
 
 interface Props {
@@ -385,21 +386,15 @@ export default function Ajustes({ usuario }: Props) {
   const coresSwitch = { false: cores.bordaForte, true: cores.primaria };
 
   function confirmarExclusao() {
-    Alert.alert(
+    confirmar(
       'Excluir perfil?',
       `Todos os dados de @${usuario.nickname} serão apagados deste aparelho: registros de água, sono e consumo, metas, medalhas e desafios. Não é possível desfazer.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: () => {
-            excluirUsuario(usuario.idUsuario);
-            setUsuario(null);
-            router.replace('/');
-          },
-        },
-      ],
+      'Excluir',
+      () => {
+        excluirUsuario(usuario.idUsuario);
+        setUsuario(null);
+        router.replace('/');
+      },
     );
   }
 
@@ -411,7 +406,17 @@ export default function Ajustes({ usuario }: Props) {
       <SecaoMetas key={versao} usuario={usuario} />
 
       <Text style={estilos.tituloGrupo}>Alertas</Text>
-      <SecaoAlertas usuario={usuario} />
+      {Platform.OS === 'web' ? (
+        <View style={styles.secao}>
+          <LinhaComIcone
+            icone="phone-portrait-outline"
+            titulo="Disponível no app do celular"
+            descricao="Os lembretes de hidratação, sono e consumo usam as notificações do celular e não funcionam no navegador."
+          />
+        </View>
+      ) : (
+        <SecaoAlertas usuario={usuario} />
+      )}
 
       <Text style={estilos.tituloGrupo}>Aparência</Text>
       <View style={styles.secao}>

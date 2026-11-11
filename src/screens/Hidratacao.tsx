@@ -1,6 +1,6 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import React, { useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
 import CampoTexto from '../components/CampoTexto';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
@@ -20,6 +20,7 @@ import {
 import { Medalha, RegistroIngestaoAgua, Usuario } from '../models/types';
 import { Cores } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
+import { confirmar } from '../utils/confirmar';
 import { lerNumero } from '../utils/entrada';
 
 interface Props {
@@ -64,19 +65,12 @@ export default function Hidratacao({ usuario }: Props) {
 
   function confirmarRemocao(registro: RegistroIngestaoAgua) {
     const horario = new Date(registro.dataHora).toLocaleTimeString().slice(0, 5);
-    Alert.alert('Remover registro?', `${registro.quantidadeMl} ml às ${horario} será removido do seu histórico.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Remover',
-        style: 'destructive',
-        onPress: () => {
-          removerIngestao(usuario.idUsuario, registro.idIngestao);
-          atualizarGamificacao(usuario.idUsuario);
-          setNovasMedalhas([]);
-          forcarAtualizacao((n) => n + 1);
-        },
-      },
-    ]);
+    confirmar('Remover registro?', `${registro.quantidadeMl} ml às ${horario} será removido do seu histórico.`, 'Remover', () => {
+      removerIngestao(usuario.idUsuario, registro.idIngestao);
+      atualizarGamificacao(usuario.idUsuario);
+      setNovasMedalhas([]);
+      forcarAtualizacao((n) => n + 1);
+    });
   }
 
   function registrarQuantidadeDigitada() {
