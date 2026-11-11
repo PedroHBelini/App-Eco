@@ -6,5 +6,5 @@ import Alertas from '../screens/Alertas';
 export default function AlertasRoute() {
   const { usuario } = useUsuario();
   if (!usuario) return <Redirect href="/" />;
-  return <Alertas />;
+  return <Alertas usuario={usuario} />;
 }

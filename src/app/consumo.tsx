@@ -6,5 +6,5 @@ import Consumo from '../screens/Consumo';
 export default function ConsumoRoute() {
   const { usuario } = useUsuario();
   if (!usuario) return <Redirect href="/" />;
-  return <Consumo />;
+  return <Consumo usuario={usuario} />;
 }

@@ -6,5 +6,5 @@ import Sono from '../screens/Sono';
 export default function SonoRoute() {
   const { usuario } = useUsuario();
   if (!usuario) return <Redirect href="/" />;
-  return <Sono />;
+  return <Sono usuario={usuario} />;
 }

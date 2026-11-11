@@ -1,28 +1,49 @@
 import React, { useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import ModuloLayout, { moduloStyles as styles } from '../components/ModuloLayout';
+import { listarConsumos, registrarConsumo, unidadeDoRecurso, validarConsumo } from '../data/repository';
+import { TipoRecurso, Usuario } from '../models/types';
 
-type Recurso = 'ENERGIA' | 'AGUA_RESIDENCIAL';
-interface Registro { tipo: Recurso; periodo: string; quantidade: number; unidade: string }
+interface Props {
+  usuario: Usuario;
+}
 
-export default function Consumo() {
+function nomeRecurso(tipo: TipoRecurso): string {
+  return tipo === 'ENERGIA' ? 'Energia' : 'Água';
+}
+
+export default function Consumo({ usuario }: Props) {
   const agora = new Date();
-  const [recurso, setRecurso] = useState<Recurso>('ENERGIA');
+  const [recurso, setRecurso] = useState<TipoRecurso>('ENERGIA');
   const [periodo, setPeriodo] = useState(`${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`);
   const [quantidade, setQuantidade] = useState('');
-  const [registros, setRegistros] = useState<Registro[]>([]);
+  const [registros, setRegistros] = useState(() => listarConsumos(usuario.idUsuario));
   const [erro, setErro] = useState('');
+  const [feedback, setFeedback] = useState('');
 
   function salvarRegistro() {
-    const valor = Number(quantidade.replace(',', '.'));
-    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(periodo) || !Number.isFinite(valor) || valor <= 0) {
+    const matchPeriodo = periodo.trim().match(/^(\d{4})-(\d{2})$/);
+    const entrada = quantidade.trim();
+    const valor = Number(entrada.replace(',', '.'));
+    const ano = matchPeriodo ? Number(matchPeriodo[1]) : NaN;
+    const mes = matchPeriodo ? Number(matchPeriodo[2]) : NaN;
+
+    if (!matchPeriodo || !/^\d+(?:[.,]\d+)?$/.test(entrada) || !validarConsumo(mes, ano, valor)) {
       setErro('Informe um mês válido (AAAA-MM) e um consumo maior que zero.');
+      setFeedback('');
       return;
     }
-    const unidade = recurso === 'ENERGIA' ? 'kWh' : 'm³';
-    setRegistros((atuais) => [{ tipo: recurso, periodo, quantidade: valor, unidade }, ...atuais]);
+
+    const jaExistia = registros.some(
+      (c) => c.tipoRecurso === recurso && c.mesReferencia === mes && c.anoReferencia === ano,
+    );
+    registrarConsumo(usuario.idUsuario, recurso, mes, ano, valor);
+    setRegistros(listarConsumos(usuario.idUsuario));
     setQuantidade('');
     setErro('');
+    setFeedback(
+      `${nomeRecurso(recurso)} de ${String(mes).padStart(2, '0')}/${ano} ${jaExistia ? 'atualizado' : 'registrado'}.`,
+    );
   }
 
   return (
@@ -32,24 +53,27 @@ export default function Consumo() {
         <View style={styles.linha}>
           {(['ENERGIA', 'AGUA_RESIDENCIAL'] as const).map((tipo) => (
             <TouchableOpacity key={tipo} onPress={() => setRecurso(tipo)} style={[styles.opcao, recurso === tipo && styles.opcaoAtiva]}>
-              <Text style={[styles.opcaoTexto, recurso === tipo && styles.opcaoTextoAtiva]}>{tipo === 'ENERGIA' ? 'Energia' : 'Água'}</Text>
+              <Text style={[styles.opcaoTexto, recurso === tipo && styles.opcaoTextoAtiva]}>{nomeRecurso(tipo)}</Text>
             </TouchableOpacity>
           ))}
         </View>
         <Text style={styles.rotulo}>Mês de referência</Text>
         <TextInput style={styles.input} value={periodo} onChangeText={setPeriodo} placeholder="AAAA-MM" />
-        <Text style={styles.rotulo}>Consumo ({recurso === 'ENERGIA' ? 'kWh' : 'm³'})</Text>
+        <Text style={styles.rotulo}>Consumo ({unidadeDoRecurso(recurso)})</Text>
         <TextInput style={styles.input} value={quantidade} onChangeText={setQuantidade} keyboardType="decimal-pad" placeholder="Ex.: 125,5" />
-        {erro ? <Text style={styles.erro}>{erro}</Text> : null}
+        {erro ? <Text style={styles.erro} accessibilityRole="alert">{erro}</Text> : null}
         <TouchableOpacity onPress={salvarRegistro} style={styles.botao}>
           <Text style={styles.botaoTexto}>Registrar consumo</Text>
         </TouchableOpacity>
+        {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
       </View>
       <View style={styles.secao}>
-        <Text style={styles.secaoTitulo}>Histórico nesta sessão</Text>
+        <Text style={styles.secaoTitulo}>Histórico</Text>
         {registros.length === 0 ? <Text style={styles.texto}>Seus registros mensais aparecerão aqui.</Text> : registros.map((item, index) => (
-          <View key={`${item.periodo}-${item.tipo}-${index}`} style={[styles.linha, index > 0 && styles.separador]}>
-            <Text style={styles.texto}>{item.periodo} · {item.tipo === 'ENERGIA' ? 'Energia' : 'Água'}</Text>
+          <View key={item.idConsumo} style={[styles.linha, index > 0 && styles.separador]}>
+            <Text style={styles.texto}>
+              {String(item.mesReferencia).padStart(2, '0')}/{item.anoReferencia} · {nomeRecurso(item.tipoRecurso)}
+            </Text>
             <Text style={styles.valor}>{item.quantidade} {item.unidade}</Text>
           </View>
         ))}
