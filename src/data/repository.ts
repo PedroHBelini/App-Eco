@@ -125,7 +125,31 @@ export function definirTema(tema: ModoTema): void {
 
 // ---- Usuário ----
 
+export interface DadosPerfil {
+  nome: string;
+  nickname: string;
+  email: string;
+}
+
+const FORMATO_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Retorna a mensagem de erro, ou null se estiver tudo certo. `idIgnorar` = o próprio usuário, ao editar.
+// nickname e email são únicos (USUARIO no projeto do banco), sem diferenciar maiúsculas.
+export function validarDadosPerfil(dados: DadosPerfil, idIgnorar?: string): string | null {
+  const nome = dados.nome.trim();
+  const nickname = dados.nickname.trim();
+  const email = dados.email.trim();
+  if (!nome || !nickname || !email) return 'Preencha nome, nickname e email.';
+  if (!FORMATO_EMAIL.test(email)) return 'Informe um email válido.';
+  const outros = banco.usuarios.filter((u) => u.idUsuario !== idIgnorar);
+  if (outros.some((u) => u.nickname.toLowerCase() === nickname.toLowerCase())) return 'Este nickname já está em uso.';
+  if (outros.some((u) => u.email.toLowerCase() === email.toLowerCase())) return 'Este email já está cadastrado.';
+  return null;
+}
+
 export function cadastrarUsuario(nome: string, nickname: string, email: string): Usuario {
+  const erro = validarDadosPerfil({ nome, nickname, email });
+  if (erro) throw new Error(erro);
   const usuario: Usuario = {
     idUsuario: gerarId(),
     nome,
@@ -137,6 +161,38 @@ export function cadastrarUsuario(nome: string, nickname: string, email: string):
   banco.usuarios = [...banco.usuarios, usuario];
   persistir();
   return usuario;
+}
+
+export function atualizarPerfil(idUsuario: string, dados: DadosPerfil): Usuario {
+  const erro = validarDadosPerfil(dados, idUsuario);
+  if (erro) throw new Error(erro);
+  const atual = banco.usuarios.find((u) => u.idUsuario === idUsuario);
+  if (!atual) throw new Error('Usuário não encontrado.');
+  const atualizado: Usuario = {
+    ...atual,
+    nome: dados.nome.trim(),
+    nickname: dados.nickname.trim(),
+    email: dados.email.trim(),
+  };
+  banco.usuarios = banco.usuarios.map((u) => (u.idUsuario === idUsuario ? atualizado : u));
+  persistir();
+  return atualizado;
+}
+
+// Apaga o perfil e todos os dados dele. O tema e os desafios (que são de todos) permanecem.
+export function excluirUsuario(idUsuario: string): void {
+  const doUsuario = (registro: { idUsuario: string }) => registro.idUsuario === idUsuario;
+  banco.usuarios = banco.usuarios.filter((u) => !doUsuario(u));
+  banco.metas = banco.metas.filter((r) => !doUsuario(r));
+  banco.ingestoes = banco.ingestoes.filter((r) => !doUsuario(r));
+  banco.registrosSono = banco.registrosSono.filter((r) => !doUsuario(r));
+  banco.consumos = banco.consumos.filter((r) => !doUsuario(r));
+  banco.configuracoesAlerta = banco.configuracoesAlerta.filter((r) => !doUsuario(r));
+  banco.usuarioMedalhas = banco.usuarioMedalhas.filter((r) => !doUsuario(r));
+  banco.participacoesDesafio = banco.participacoesDesafio.filter((r) => !doUsuario(r));
+  banco.preferenciasUsuario = banco.preferenciasUsuario.filter((r) => !doUsuario(r));
+  if (banco.idUsuarioSessao === idUsuario) banco.idUsuarioSessao = null;
+  persistir();
 }
 
 // ---- Metas ----
