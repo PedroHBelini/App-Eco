@@ -10,23 +10,13 @@ import {
   validarMetaSono,
 } from '../data/repository';
 import { Usuario } from '../models/types';
+import { formatarDiaMes, formatarHoras } from '../utils/formatacao';
 
 interface Props {
   usuario: Usuario;
 }
 
 const REGISTROS_NO_HISTORICO = 7;
-
-function formatarHoras(horas: number): string {
-  const minutos = Math.round(horas * 60);
-  const resto = minutos % 60;
-  return resto === 0 ? `${Math.floor(minutos / 60)}h` : `${Math.floor(minutos / 60)}h ${resto}min`;
-}
-
-function formatarData(dataISO: string): string {
-  const [, mes, dia] = dataISO.split('-');
-  return `${dia}/${mes}`;
-}
 
 export default function Sono({ usuario }: Props) {
   const [dormir, setDormir] = useState('');
@@ -119,7 +109,7 @@ export default function Sono({ usuario }: Props) {
           registros.slice(0, REGISTROS_NO_HISTORICO).map((item, index) => (
             <View key={item.idSono} style={[styles.linha, index > 0 && styles.separador]}>
               <Text style={styles.texto}>
-                {formatarData(item.dataReferencia)} · {item.horarioDormir}–{item.horarioAcordar}
+                {formatarDiaMes(item.dataReferencia)} · {item.horarioDormir}–{item.horarioAcordar}
               </Text>
               <Text style={styles.valor}>{formatarHoras(item.duracaoHoras)}</Text>
             </View>

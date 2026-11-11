@@ -6,5 +6,5 @@ import Relatorios from '../screens/Relatorios';
 export default function RelatoriosRoute() {
   const { usuario } = useUsuario();
   if (!usuario) return <Redirect href="/" />;
-  return <Relatorios />;
+  return <Relatorios usuario={usuario} />;
 }
