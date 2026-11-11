@@ -9,7 +9,7 @@ import {
   listarRegistrosSono,
   registrarSono,
   validarMetaSono,
-  verificarMedalhas,
+  atualizarGamificacao,
 } from '../data/repository';
 import { Medalha, Usuario } from '../models/types';
 import { formatarDiaMes, formatarHoras } from '../utils/formatacao';
@@ -48,7 +48,7 @@ export default function Sono({ usuario }: Props) {
     setRegistros(listarRegistrosSono(usuario.idUsuario));
     setErro('');
     setFeedback(`Duração registrada: ${formatarHoras(registro.duracaoHoras)}`);
-    setMedalhasDoRegistro(verificarMedalhas(usuario.idUsuario));
+    setMedalhasDoRegistro(atualizarGamificacao(usuario.idUsuario));
     setMedalhasDaMeta([]);
     setDormir('');
     setAcordar('');
@@ -65,7 +65,7 @@ export default function Sono({ usuario }: Props) {
     setMeta(definirMetaSono(usuario.idUsuario, horas));
     setErroMeta('');
     setFeedbackMeta('Meta salva.');
-    setMedalhasDaMeta(verificarMedalhas(usuario.idUsuario));
+    setMedalhasDaMeta(atualizarGamificacao(usuario.idUsuario));
     setMedalhasDoRegistro([]);
   }
 

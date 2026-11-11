@@ -62,4 +62,10 @@ export const CATALOGO_MEDALHAS: Medalha[] = [
     descricao: 'Consuma menos energia ou água do que no mês anterior.',
     criterio: 'consumo_mes < consumo_mes_anterior',
   },
+  {
+    idMedalha: 'DESAFIANTE',
+    nome: 'Desafiante',
+    descricao: 'Complete um desafio semanal.',
+    criterio: 'desafios_concluidos >= 1',
+  },
 ];

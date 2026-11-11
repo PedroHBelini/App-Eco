@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import CartaoDesafio from '../components/CartaoDesafio';
 import ModuloLayout, { moduloStyles as styles } from '../components/ModuloLayout';
-import { calcularRecordes, listarMedalhas, SituacaoMedalha, verificarMedalhas } from '../data/repository';
+import {
+  atualizarGamificacao,
+  avaliarDesafioDaSemana,
+  calcularRecordes,
+  listarDesafiosAnteriores,
+  listarMedalhas,
+  proximoDesafio,
+  SituacaoMedalha,
+} from '../data/repository';
 import { Recorde, TipoRecorde, Usuario } from '../models/types';
 import { formatarDiaMes } from '../utils/formatacao';
 
@@ -103,13 +112,19 @@ export default function Gamificacao({ usuario }: Props) {
   const recordes = calcularRecordes(usuario.idUsuario);
   // Ao abrir a tela, libera também medalhas cujo critério já foi atingido (ex.: histórico anterior às medalhas).
   const [medalhas] = useState(() => {
-    verificarMedalhas(usuario.idUsuario);
+    atualizarGamificacao(usuario.idUsuario);
     return listarMedalhas(usuario.idUsuario);
   });
   const conquistadas = medalhas.filter((m) => m.dataConquista !== null).length;
+  const desafio = avaliarDesafioDaSemana(usuario.idUsuario);
+  const anteriores = listarDesafiosAnteriores(usuario.idUsuario, 4);
 
   return (
     <ModuloLayout titulo="Conquistas" descricao="Metas, desafios e recordes para acompanhar sua evolução.">
+      <View style={styles.secao}>
+        <Text style={styles.secaoTitulo}>Desafio da semana</Text>
+        <CartaoDesafio avaliacao={desafio} proximo={proximoDesafio()} anteriores={anteriores} />
+      </View>
       <View style={styles.secao}>
         <Text style={styles.secaoTitulo}>Recordes</Text>
         <Text style={[styles.texto, estilos.explicacao]}>Dias consecutivos em que você bateu a meta.</Text>
@@ -118,10 +133,6 @@ export default function Gamificacao({ usuario }: Props) {
             <CartaoRecorde recorde={recorde} />
           </View>
         ))}
-      </View>
-      <View style={styles.secao}>
-        <Text style={styles.secaoTitulo}>Desafio da semana</Text>
-        <Text style={styles.texto}>Em breve.</Text>
       </View>
       <View style={styles.secao}>
         <Text style={styles.secaoTitulo}>Medalhas</Text>

@@ -81,7 +81,8 @@ export type IdMedalha =
   | 'BEM_DESCANSADO'
   | 'EQUILIBRIO'
   | 'CONTA_EM_DIA'
-  | 'ECONOMIA';
+  | 'ECONOMIA'
+  | 'DESAFIANTE';
 
 // Catálogo fixo (tabela MEDALHA).
 export interface Medalha {
@@ -96,4 +97,28 @@ export interface UsuarioMedalha {
   idUsuario: string;
   idMedalha: IdMedalha;
   dataConquista: string; // ISO
+}
+
+export type ModeloDesafio = 'SEMANA_DA_AGUA' | 'SONO_EM_DIA' | 'AGUA_TODO_DIA' | 'DUPLA_SAUDAVEL';
+
+// Uma ocorrência semanal de um dos modelos (tabela DESAFIO). Mesmo desafio para todos os usuários na semana.
+export interface Desafio {
+  idDesafio: string; // `${modelo}-${dataInicio}`
+  modelo: ModeloDesafio;
+  nome: string;
+  descricao: string;
+  dataInicio: string; // segunda-feira, AAAA-MM-DD
+  dataFim: string; // domingo, AAAA-MM-DD
+  criterio: string;
+  alvo: number; // dias que precisam contar na semana
+}
+
+// Tabela PARTICIPACAO_DESAFIO. A posição será preenchida pelo ranking.
+export interface ParticipacaoDesafio {
+  idDesafio: string;
+  idUsuario: string;
+  pontuacao: number;
+  concluido: boolean;
+  dataConclusao: string | null; // ISO
+  posicao: number | null;
 }

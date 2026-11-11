@@ -9,7 +9,7 @@ import {
   listarIngestoesDoDia,
   registrarIngestao,
   validarQuantidadeIngestao,
-  verificarMedalhas,
+  atualizarGamificacao,
 } from '../data/repository';
 import { Medalha, Usuario } from '../models/types';
 
@@ -37,7 +37,7 @@ export default function Hidratacao({ usuario }: Props) {
     }
 
     registrarIngestao(usuario.idUsuario, quantidadeMl);
-    setNovasMedalhas(verificarMedalhas(usuario.idUsuario));
+    setNovasMedalhas(atualizarGamificacao(usuario.idUsuario));
     setQuantidade('');
     setErro('');
     forcarAtualizacao((n) => n + 1);

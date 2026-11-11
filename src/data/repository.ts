@@ -2,9 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ConfiguracaoAlerta,
   ConsumoRecurso,
+  Desafio,
   IdMedalha,
   Medalha,
   Meta,
+  ParticipacaoDesafio,
   RegistroIngestaoAgua,
   Recorde,
   RegistroSono,
@@ -15,6 +17,7 @@ import {
   Usuario,
   UsuarioMedalha,
 } from '../models/types';
+import { BONUS_CONCLUSAO, CATALOGO_DESAFIOS, ModeloDeDesafio, PONTOS_POR_DIA } from './catalogoDesafios';
 import { CATALOGO_MEDALHAS } from './catalogoMedalhas';
 
 const CHAVE_BANCO = '@appeco/banco';
@@ -30,6 +33,8 @@ interface Banco {
   consumos: ConsumoRecurso[];
   configuracoesAlerta: ConfiguracaoAlerta[];
   usuarioMedalhas: UsuarioMedalha[];
+  desafios: Desafio[];
+  participacoesDesafio: ParticipacaoDesafio[];
 }
 
 function bancoVazio(): Banco {
@@ -43,6 +48,8 @@ function bancoVazio(): Banco {
     consumos: [],
     configuracoesAlerta: [],
     usuarioMedalhas: [],
+    desafios: [],
+    participacoesDesafio: [],
   };
 }
 
@@ -390,6 +397,14 @@ function dataCadastroLocal(idUsuario: string): string | null {
 }
 
 export function serieHidratacao(idUsuario: string, dias: number): PontoDiario[] {
+  return pontosHidratacao(idUsuario, ultimosDias(dias));
+}
+
+export function serieSono(idUsuario: string, dias: number): PontoDiario[] {
+  return pontosSono(idUsuario, ultimosDias(dias));
+}
+
+function pontosHidratacao(idUsuario: string, datas: string[]): PontoDiario[] {
   const totais = new Map<string, number>();
   for (const i of banco.ingestoes) {
     if (i.idUsuario !== idUsuario) continue;
@@ -398,7 +413,7 @@ export function serieHidratacao(idUsuario: string, dias: number): PontoDiario[] 
   }
   const inicio = dataCadastroLocal(idUsuario);
 
-  return ultimosDias(dias).map((data) => ({
+  return datas.map((data) => ({
     data,
     // Dias depois do cadastro sem registro contam como 0 ml; antes do cadastro não há dado.
     valor: totais.get(data) ?? (inicio !== null && data >= inicio ? 0 : null),
@@ -406,11 +421,11 @@ export function serieHidratacao(idUsuario: string, dias: number): PontoDiario[] 
   }));
 }
 
-export function serieSono(idUsuario: string, dias: number): PontoDiario[] {
+function pontosSono(idUsuario: string, datas: string[]): PontoDiario[] {
   const porDia = new Map(
     banco.registrosSono.filter((r) => r.idUsuario === idUsuario).map((r) => [r.dataReferencia, r.duracaoHoras]),
   );
-  return ultimosDias(dias).map((data) => ({
+  return datas.map((data) => ({
     data,
     valor: porDia.get(data) ?? null,
     meta: metaVigenteEm(idUsuario, 'SONO', data),
@@ -542,11 +557,14 @@ function avaliarMedalhas(idUsuario: string): Record<IdMedalha, Avaliacao> {
     EQUILIBRIO: { atingida: agua.some((ponto, i) => metaAtingida(ponto) && metaAtingida(sono[i])) },
     CONTA_EM_DIA: { atingida: contas > 0 },
     ECONOMIA: { atingida: houveEconomia(idUsuario) },
+    DESAFIANTE: {
+      atingida: banco.participacoesDesafio.some((p) => p.idUsuario === idUsuario && p.concluido),
+    },
   };
 }
 
 // Libera as medalhas cujo critério foi atingido e retorna só as novas, para a tela comemorar.
-export function verificarMedalhas(idUsuario: string): Medalha[] {
+function verificarMedalhas(idUsuario: string): Medalha[] {
   const avaliacoes = avaliarMedalhas(idUsuario);
   const jaConquistadas = new Set(
     banco.usuarioMedalhas.filter((um) => um.idUsuario === idUsuario).map((um) => um.idMedalha),
@@ -578,4 +596,182 @@ export function listarMedalhas(idUsuario: string): SituacaoMedalha[] {
       progresso: conquista ? undefined : avaliacoes[medalha.idMedalha].progresso,
     };
   });
+}
+
+// ---- Gamificação: desafios semanais ----
+
+const UM_DIA_MS = 86_400_000;
+// Segunda-feira usada como marco do rodízio: a semana que começa nela usa o 1º desafio do catálogo.
+const SEGUNDA_DE_REFERENCIA = new Date(2026, 0, 5);
+
+function deISO(dataISO: string): Date {
+  const [ano, mes, dia] = dataISO.split('-').map(Number);
+  return new Date(ano, mes - 1, dia);
+}
+
+function somarDias(dataISO: string, dias: number): string {
+  const d = deISO(dataISO);
+  return dataLocal(new Date(d.getFullYear(), d.getMonth(), d.getDate() + dias));
+}
+
+// Segunda-feira da semana da data.
+function inicioDaSemana(data: Date): string {
+  const recuo = (data.getDay() + 6) % 7; // segunda = 0 ... domingo = 6
+  return dataLocal(new Date(data.getFullYear(), data.getMonth(), data.getDate() - recuo));
+}
+
+function modeloDaSemana(dataInicio: string): ModeloDeDesafio {
+  const semanas = Math.round((deISO(dataInicio).getTime() - SEGUNDA_DE_REFERENCIA.getTime()) / (7 * UM_DIA_MS));
+  const total = CATALOGO_DESAFIOS.length;
+  return CATALOGO_DESAFIOS[((semanas % total) + total) % total];
+}
+
+function desafioDaSemanaDe(dataInicio: string): Desafio {
+  const modelo = modeloDaSemana(dataInicio);
+  return {
+    idDesafio: `${modelo.modelo}-${dataInicio}`,
+    modelo: modelo.modelo,
+    nome: modelo.nome,
+    descricao: modelo.descricao,
+    dataInicio,
+    dataFim: somarDias(dataInicio, 6),
+    criterio: modelo.criterio,
+    alvo: modelo.alvo,
+  };
+}
+
+export function desafioDaSemana(): Desafio {
+  return desafioDaSemanaDe(inicioDaSemana(new Date()));
+}
+
+export function proximoDesafio(): Desafio {
+  return desafioDaSemanaDe(somarDias(inicioDaSemana(new Date()), 7));
+}
+
+export interface DiaDoDesafio {
+  data: string;
+  contou: boolean;
+  futuro: boolean;
+  hoje: boolean;
+}
+
+export interface AvaliacaoDesafio {
+  desafio: Desafio;
+  dias: DiaDoDesafio[]; // segunda a domingo
+  atual: number;
+  pontuacao: number;
+  concluido: boolean;
+  aindaPossivel: boolean;
+  metasFaltando: TipoMeta[]; // metas que o usuário precisa definir para participar
+}
+
+function avaliarDesafio(idUsuario: string, desafio: Desafio): AvaliacaoDesafio {
+  const modelo = CATALOGO_DESAFIOS.find((m) => m.modelo === desafio.modelo)!;
+  const datas = Array.from({ length: 7 }, (_, i) => somarDias(desafio.dataInicio, i));
+  const agua = pontosHidratacao(idUsuario, datas);
+  const sono = pontosSono(idUsuario, datas);
+  const hoje = hojeLocal();
+
+  const contou = (i: number): boolean => {
+    switch (desafio.modelo) {
+      case 'SEMANA_DA_AGUA':
+        return metaAtingida(agua[i]);
+      case 'SONO_EM_DIA':
+        return metaAtingida(sono[i]);
+      case 'AGUA_TODO_DIA':
+        return (agua[i].valor ?? 0) > 0;
+      case 'DUPLA_SAUDAVEL':
+        return metaAtingida(agua[i]) && metaAtingida(sono[i]);
+    }
+  };
+
+  const dias = datas.map((data, i) => ({
+    data,
+    contou: data <= hoje && contou(i),
+    futuro: data > hoje,
+    hoje: data === hoje,
+  }));
+  const atual = dias.filter((d) => d.contou).length;
+  const concluido = atual >= desafio.alvo;
+  // Dias que ainda podem contar: os futuros e hoje, se hoje ainda não contou.
+  const diasRestantes = dias.filter((d) => d.futuro || (d.data === hoje && !d.contou)).length;
+
+  return {
+    desafio,
+    dias,
+    atual,
+    pontuacao: atual * PONTOS_POR_DIA + (concluido ? BONUS_CONCLUSAO : 0),
+    concluido,
+    aindaPossivel: concluido || atual + diasRestantes >= desafio.alvo,
+    metasFaltando: modelo.metasNecessarias.filter((tipo) => !buscarMetaAtiva(idUsuario, tipo)),
+  };
+}
+
+export function avaliarDesafioDaSemana(idUsuario: string): AvaliacaoDesafio {
+  return avaliarDesafio(idUsuario, desafioDaSemana());
+}
+
+// Grava desafio e participação da semana atual e fecha a da semana anterior.
+function atualizarDesafios(idUsuario: string): void {
+  const cadastro = dataCadastroLocal(idUsuario);
+  const semanaAtual = inicioDaSemana(new Date());
+  const semanas = [somarDias(semanaAtual, -7), semanaAtual].filter(
+    // Só semanas que terminam depois do cadastro.
+    (inicio) => cadastro === null || somarDias(inicio, 6) >= cadastro,
+  );
+
+  for (const inicio of semanas) {
+    const avaliacao = avaliarDesafio(idUsuario, desafioDaSemanaDe(inicio));
+    const { desafio } = avaliacao;
+
+    if (!banco.desafios.some((d) => d.idDesafio === desafio.idDesafio)) {
+      banco.desafios = [...banco.desafios, desafio];
+    }
+
+    const existente = banco.participacoesDesafio.find(
+      (p) => p.idUsuario === idUsuario && p.idDesafio === desafio.idDesafio,
+    );
+    // Assim como as medalhas, um desafio concluído não "desconclui" se um registro for corrigido.
+    const concluido = (existente?.concluido ?? false) || avaliacao.concluido;
+    const participacao: ParticipacaoDesafio = {
+      idDesafio: desafio.idDesafio,
+      idUsuario,
+      pontuacao: Math.max(existente?.pontuacao ?? 0, avaliacao.pontuacao),
+      concluido,
+      dataConclusao: existente?.dataConclusao ?? (concluido ? new Date().toISOString() : null),
+      posicao: existente?.posicao ?? null,
+    };
+    banco.participacoesDesafio = [
+      ...banco.participacoesDesafio.filter((p) => p !== existente),
+      participacao,
+    ];
+  }
+  persistir();
+}
+
+export interface ResultadoDesafio {
+  desafio: Desafio;
+  participacao: ParticipacaoDesafio;
+}
+
+// Desafios de semanas anteriores, do mais recente para o mais antigo.
+export function listarDesafiosAnteriores(idUsuario: string, limite: number): ResultadoDesafio[] {
+  const semanaAtual = inicioDaSemana(new Date());
+  return banco.participacoesDesafio
+    .filter((p) => p.idUsuario === idUsuario)
+    .map((participacao) => ({
+      participacao,
+      desafio: banco.desafios.find((d) => d.idDesafio === participacao.idDesafio)!,
+    }))
+    .filter((r) => r.desafio && r.desafio.dataInicio < semanaAtual)
+    .sort((a, b) => b.desafio.dataInicio.localeCompare(a.desafio.dataInicio))
+    .slice(0, limite);
+}
+
+// ---- Gamificação: ponto único de atualização ----
+
+// Chamar depois de qualquer registro: atualiza os desafios e libera medalhas. Retorna as medalhas novas.
+export function atualizarGamificacao(idUsuario: string): Medalha[] {
+  atualizarDesafios(idUsuario);
+  return verificarMedalhas(idUsuario);
 }
