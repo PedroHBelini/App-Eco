@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import CartaoDesafio from '../components/CartaoDesafio';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
+import SeloMedalha from '../components/SeloMedalha';
 import { useAtualizarAoFocar } from '../hooks/useAtualizarAoFocar';
 import {
   atualizarGamificacao,
@@ -96,11 +97,7 @@ function ItemMedalha({ situacao }: { situacao: SituacaoMedalha }) {
       accessible
       accessibilityLabel={`${medalha.nome}. ${medalha.descricao} ${estado}.`}
     >
-      <View style={[styles.medalhaSelo, !conquistada && estilos.seloBloqueado]}>
-        <Text style={[styles.medalhaInicial, !conquistada && estilos.inicialBloqueada]}>
-          {conquistada ? '✓' : medalha.nome.charAt(0)}
-        </Text>
-      </View>
+      <SeloMedalha idMedalha={medalha.idMedalha} conquistada={conquistada} />
       <View style={styles.medalhaDescricao}>
         <Text style={[styles.valor, !conquistada && estilos.nomeBloqueado]}>{medalha.nome}</Text>
         <Text style={styles.texto}>{medalha.descricao}</Text>
@@ -164,8 +161,6 @@ function criarEstilos(c: Cores) {
     numero: { flex: 1, backgroundColor: c.superficieSuave, borderRadius: 12, padding: 14 },
     valor: { color: c.texto, fontSize: 28, fontWeight: '700' },
     primeiraMedalha: { paddingTop: 12 },
-    seloBloqueado: { backgroundColor: c.superficieSuave },
-    inicialBloqueada: { color: c.textoSuave },
     nomeBloqueado: { color: c.textoSecundario },
     progressoFundo: { height: 6, backgroundColor: c.superficieSuave, borderRadius: 3, overflow: 'hidden', marginTop: 8 },
     progresso: { height: '100%', backgroundColor: c.primaria, borderRadius: 3 },
