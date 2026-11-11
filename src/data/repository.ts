@@ -21,6 +21,7 @@ import {
 import { BONUS_CONCLUSAO, CATALOGO_DESAFIOS, ModeloDeDesafio, PONTOS_POR_DIA } from './catalogoDesafios';
 import { CATALOGO_MEDALHAS } from './catalogoMedalhas';
 import { ModoTema } from '../theme/cores';
+import { diasEntre, ehDataISO, hojeISO, inicioDaSemana, paraDataISO, somarDias } from '../utils/datas';
 
 const CHAVE_BANCO = '@appeco/banco';
 const VERSAO_BANCO = 1;
@@ -131,18 +132,6 @@ function gerarId(): string {
   return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 }
 
-// Data no fuso do aparelho (AAAA-MM-DD). toISOString() usaria UTC e viraria o dia às 21h no Brasil.
-function dataLocal(data: Date): string {
-  const ano = data.getFullYear();
-  const mes = String(data.getMonth() + 1).padStart(2, '0');
-  const dia = String(data.getDate()).padStart(2, '0');
-  return `${ano}-${mes}-${dia}`;
-}
-
-function hojeLocal(): string {
-  return dataLocal(new Date());
-}
-
 // ---- Sessão ----
 
 export function buscarUsuarioDaSessao(): Usuario | null {
@@ -176,8 +165,15 @@ export interface DadosPerfil {
 
 const FORMATO_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Retorna a mensagem de erro, ou null se estiver tudo certo. `idIgnorar` = o próprio usuário, ao editar.
-// nickname e email são únicos (USUARIO no projeto do banco), sem diferenciar maiúsculas.
+// Padrão das validações: as funções validar* retornam a mensagem de erro para mostrar ao usuário,
+// ou null se estiver tudo certo. As funções que gravam usam a mesma validação e lançam um Error com
+// essa mensagem se receberem dados inválidos — as telas devem validar antes.
+
+function exigirValido(problema: string | null): void {
+  if (problema) throw new Error(problema);
+}
+
+// `idIgnorar` = o próprio usuário, ao editar. nickname e email são únicos (USUARIO no projeto do banco), sem diferenciar maiúsculas.
 export function validarDadosPerfil(dados: DadosPerfil, idIgnorar?: string): string | null {
   const nome = dados.nome.trim();
   const nickname = dados.nickname.trim();
@@ -191,8 +187,7 @@ export function validarDadosPerfil(dados: DadosPerfil, idIgnorar?: string): stri
 }
 
 export function cadastrarUsuario(nome: string, nickname: string, email: string): Usuario {
-  const erro = validarDadosPerfil({ nome, nickname, email });
-  if (erro) throw new Error(erro);
+  exigirValido(validarDadosPerfil({ nome, nickname, email }));
   const usuario: Usuario = {
     idUsuario: gerarId(),
     nome,
@@ -207,8 +202,7 @@ export function cadastrarUsuario(nome: string, nickname: string, email: string):
 }
 
 export function atualizarPerfil(idUsuario: string, dados: DadosPerfil): Usuario {
-  const erro = validarDadosPerfil(dados, idUsuario);
-  if (erro) throw new Error(erro);
+  exigirValido(validarDadosPerfil(dados, idUsuario));
   const atual = banco.usuarios.find((u) => u.idUsuario === idUsuario);
   if (!atual) throw new Error('Usuário não encontrado.');
   const atualizado: Usuario = {
@@ -247,7 +241,7 @@ function definirMeta(idUsuario: string, tipo: TipoMeta, valorMeta: number, unida
     tipo,
     valorMeta,
     unidade,
-    dataInicio: hojeLocal(),
+    dataInicio: hojeISO(),
     ativa: true,
   };
   // Metas anteriores ficam inativas (e não apagadas) para os relatórios usarem a meta vigente em cada dia.
@@ -263,7 +257,12 @@ function buscarMetaAtiva(idUsuario: string, tipo: TipoMeta): Meta | undefined {
   return banco.metas.find((m) => m.idUsuario === idUsuario && m.tipo === tipo && m.ativa);
 }
 
+export function validarMetaHidratacao(valorMetaMl: number): string | null {
+  return Number.isInteger(valorMetaMl) && valorMetaMl > 0 ? null : 'Informe a meta de hidratação em ml, como 2000.';
+}
+
 export function definirMetaHidratacao(idUsuario: string, valorMetaMl: number): Meta {
+  exigirValido(validarMetaHidratacao(valorMetaMl));
   return definirMeta(idUsuario, 'HIDRATACAO', valorMetaMl, 'ml_por_dia');
 }
 
@@ -271,14 +270,14 @@ export function buscarMetaHidratacaoAtiva(idUsuario: string): Meta | undefined {
   return buscarMetaAtiva(idUsuario, 'HIDRATACAO');
 }
 
-export function validarMetaSono(horas: number): boolean {
-  return Number.isFinite(horas) && horas > 0 && horas <= 18;
+export function validarMetaSono(horas: number): string | null {
+  return Number.isFinite(horas) && horas > 0 && horas <= 18
+    ? null
+    : 'Informe a meta de sono entre 0 e 18 horas, como 8 ou 7,5.';
 }
 
 export function definirMetaSono(idUsuario: string, horasPorNoite: number): Meta {
-  if (!validarMetaSono(horasPorNoite)) {
-    throw new RangeError('A meta de sono deve ficar entre 0 e 18 horas.');
-  }
+  exigirValido(validarMetaSono(horasPorNoite));
   return definirMeta(idUsuario, 'SONO', horasPorNoite, 'horas_por_noite');
 }
 
@@ -290,8 +289,10 @@ export function buscarMetaSonoAtiva(idUsuario: string): Meta | undefined {
 
 export const ATALHO_HIDRATACAO_PADRAO_ML = 250;
 
-export function validarAtalhoHidratacao(quantidadeMl: number): boolean {
-  return Number.isInteger(quantidadeMl) && quantidadeMl >= 50 && quantidadeMl <= 2000;
+export function validarAtalhoHidratacao(quantidadeMl: number): string | null {
+  return Number.isInteger(quantidadeMl) && quantidadeMl >= 50 && quantidadeMl <= 2000
+    ? null
+    : 'Informe um valor inteiro entre 50 e 2000 ml.';
 }
 
 export function buscarAtalhoHidratacao(idUsuario: string): number {
@@ -302,9 +303,7 @@ export function buscarAtalhoHidratacao(idUsuario: string): number {
 }
 
 export function definirAtalhoHidratacao(idUsuario: string, quantidadeMl: number): void {
-  if (!validarAtalhoHidratacao(quantidadeMl)) {
-    throw new RangeError('O atalho de hidratação deve ser um número inteiro entre 50 e 2000 ml.');
-  }
+  exigirValido(validarAtalhoHidratacao(quantidadeMl));
   const atual = banco.preferenciasUsuario.find((p) => p.idUsuario === idUsuario);
   banco.preferenciasUsuario = [
     ...banco.preferenciasUsuario.filter((p) => p !== atual),
@@ -315,14 +314,12 @@ export function definirAtalhoHidratacao(idUsuario: string, quantidadeMl: number)
 
 // ---- Ingestão de água ----
 
-export function validarQuantidadeIngestao(quantidadeMl: number): boolean {
-  return Number.isFinite(quantidadeMl) && quantidadeMl > 0;
+export function validarQuantidadeIngestao(quantidadeMl: number): string | null {
+  return Number.isFinite(quantidadeMl) && quantidadeMl > 0 ? null : 'Informe uma quantidade válida maior que zero.';
 }
 
 export function registrarIngestao(idUsuario: string, quantidadeMl: number): RegistroIngestaoAgua {
-  if (!validarQuantidadeIngestao(quantidadeMl)) {
-    throw new RangeError('A quantidade de ingestão deve ser um número finito maior que zero.');
-  }
+  exigirValido(validarQuantidadeIngestao(quantidadeMl));
 
   const registro: RegistroIngestaoAgua = {
     idIngestao: gerarId(),
@@ -345,9 +342,9 @@ export function removerIngestao(idUsuario: string, idIngestao: string): boolean 
 }
 
 export function listarIngestoesDoDia(idUsuario: string): RegistroIngestaoAgua[] {
-  const hoje = hojeLocal();
+  const hoje = hojeISO();
   return banco.ingestoes.filter(
-    (i) => i.idUsuario === idUsuario && dataLocal(new Date(i.dataHora)) === hoje,
+    (i) => i.idUsuario === idUsuario && paraDataISO(new Date(i.dataHora)) === hoje,
   );
 }
 
@@ -380,21 +377,25 @@ export function calcularDuracaoSonoMinutos(horarioDormir: string, horarioAcordar
   return duracao > DURACAO_MAXIMA_SONO_MIN ? null : duracao;
 }
 
+export function validarSono(horarioDormir: string, horarioAcordar: string, dataReferencia: string): string | null {
+  if (!horarioDormir || !horarioAcordar) return 'Escolha o horário em que dormiu e o horário em que acordou.';
+  if (calcularDuracaoSonoMinutos(horarioDormir, horarioAcordar) === null) {
+    return 'O período entre dormir e acordar deve ter até 18 horas.';
+  }
+  if (!ehDataISO(dataReferencia) || dataReferencia > hojeISO()) return 'A data da noite não pode ser no futuro.';
+  return null;
+}
+
 // Um registro por noite: registrar de novo no mesmo dia substitui o anterior.
 // dataReferencia = dia em que acordou (padrão: hoje). Pode ser um dia anterior, nunca futuro.
 export function registrarSono(
   idUsuario: string,
   horarioDormir: string,
   horarioAcordar: string,
-  dataReferencia: string = hojeLocal(),
+  dataReferencia: string = hojeISO(),
 ): RegistroSono {
-  const minutos = calcularDuracaoSonoMinutos(horarioDormir, horarioAcordar);
-  if (minutos === null) {
-    throw new RangeError('Horários de sono inválidos.');
-  }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dataReferencia) || dataReferencia > hojeLocal()) {
-    throw new RangeError('A data da noite não pode ser no futuro.');
-  }
+  exigirValido(validarSono(horarioDormir, horarioAcordar, dataReferencia));
+  const minutos = calcularDuracaoSonoMinutos(horarioDormir, horarioAcordar)!;
 
   const registro: RegistroSono = {
     idSono: gerarId(),
@@ -424,17 +425,11 @@ export function unidadeDoRecurso(tipo: TipoRecurso): string {
   return tipo === 'ENERGIA' ? 'kWh' : 'm³';
 }
 
-export function validarConsumo(mes: number, ano: number, quantidade: number): boolean {
-  return (
-    Number.isInteger(mes) &&
-    mes >= 1 &&
-    mes <= 12 &&
-    Number.isInteger(ano) &&
-    ano >= 2000 &&
-    ano <= 2100 &&
-    Number.isFinite(quantidade) &&
-    quantidade > 0
-  );
+export function validarConsumo(mes: number, ano: number, quantidade: number): string | null {
+  if (!Number.isInteger(mes) || mes < 1 || mes > 12 || !Number.isInteger(ano) || ano < 2000 || ano > 2100) {
+    return 'Escolha um mês de referência válido.';
+  }
+  return Number.isFinite(quantidade) && quantidade > 0 ? null : 'Informe um consumo maior que zero.';
 }
 
 // Um registro por recurso e mês: informar de novo o mesmo mês corrige o valor anterior.
@@ -445,9 +440,7 @@ export function registrarConsumo(
   anoReferencia: number,
   quantidade: number,
 ): ConsumoRecurso {
-  if (!validarConsumo(mesReferencia, anoReferencia, quantidade)) {
-    throw new RangeError('Mês de referência ou quantidade de consumo inválidos.');
-  }
+  exigirValido(validarConsumo(mesReferencia, anoReferencia, quantidade));
 
   const registro: ConsumoRecurso = {
     idConsumo: gerarId(),
@@ -534,10 +527,8 @@ export interface PontoMensal {
 
 // Últimos `quantidade` dias (incluindo hoje), do mais antigo para o mais recente.
 function ultimosDias(quantidade: number): string[] {
-  const hoje = new Date();
-  return Array.from({ length: quantidade }, (_, i) =>
-    dataLocal(new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - (quantidade - 1 - i))),
-  );
+  const hoje = hojeISO();
+  return Array.from({ length: quantidade }, (_, i) => somarDias(hoje, -(quantidade - 1 - i)));
 }
 
 // Meta que valia na data: a mais recente com dataInicio até aquele dia.
@@ -553,7 +544,7 @@ function metaVigenteEm(idUsuario: string, tipo: TipoMeta, data: string): number 
 
 function dataCadastroLocal(idUsuario: string): string | null {
   const usuario = banco.usuarios.find((u) => u.idUsuario === idUsuario);
-  return usuario ? dataLocal(new Date(usuario.dataCadastro)) : null;
+  return usuario ? paraDataISO(new Date(usuario.dataCadastro)) : null;
 }
 
 export function serieHidratacao(idUsuario: string, dias: number): PontoDiario[] {
@@ -568,7 +559,7 @@ function pontosHidratacao(idUsuario: string, datas: string[]): PontoDiario[] {
   const totais = new Map<string, number>();
   for (const i of banco.ingestoes) {
     if (i.idUsuario !== idUsuario) continue;
-    const dia = dataLocal(new Date(i.dataHora));
+    const dia = paraDataISO(new Date(i.dataHora));
     totais.set(dia, (totais.get(dia) ?? 0) + i.quantidadeMl);
   }
   const inicio = dataCadastroLocal(idUsuario);
@@ -612,10 +603,7 @@ export function serieConsumoMensal(idUsuario: string, tipo: TipoRecurso, meses: 
 function diasDesdeCadastro(idUsuario: string): number {
   const inicio = dataCadastroLocal(idUsuario);
   if (!inicio) return 1;
-  const [ano, mes, dia] = inicio.split('-').map(Number);
-  const hoje = new Date();
-  const diferenca = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime() - new Date(ano, mes - 1, dia).getTime();
-  return Math.max(Math.round(diferenca / 86_400_000) + 1, 1);
+  return Math.max(diasEntre(inicio, hojeISO()) + 1, 1);
 }
 
 function metaAtingida(ponto: PontoDiario): boolean {
@@ -645,7 +633,7 @@ function calcularRecorde(idUsuario: string, tipoRecorde: TipoRecorde, serie: Pon
     maiorSequencia,
     metaDefinida: serie.some((p) => p.meta !== null),
     hojeConcluido,
-    dataAtualizacao: hojeLocal(),
+    dataAtualizacao: hojeISO(),
   };
 }
 
@@ -760,28 +748,11 @@ export function listarMedalhas(idUsuario: string): SituacaoMedalha[] {
 
 // ---- Gamificação: desafios semanais ----
 
-const UM_DIA_MS = 86_400_000;
 // Segunda-feira usada como marco do rodízio: a semana que começa nela usa o 1º desafio do catálogo.
-const SEGUNDA_DE_REFERENCIA = new Date(2026, 0, 5);
-
-function deISO(dataISO: string): Date {
-  const [ano, mes, dia] = dataISO.split('-').map(Number);
-  return new Date(ano, mes - 1, dia);
-}
-
-function somarDias(dataISO: string, dias: number): string {
-  const d = deISO(dataISO);
-  return dataLocal(new Date(d.getFullYear(), d.getMonth(), d.getDate() + dias));
-}
-
-// Segunda-feira da semana da data.
-function inicioDaSemana(data: Date): string {
-  const recuo = (data.getDay() + 6) % 7; // segunda = 0 ... domingo = 6
-  return dataLocal(new Date(data.getFullYear(), data.getMonth(), data.getDate() - recuo));
-}
+const SEGUNDA_DE_REFERENCIA = '2026-01-05';
 
 function modeloDaSemana(dataInicio: string): ModeloDeDesafio {
-  const semanas = Math.round((deISO(dataInicio).getTime() - SEGUNDA_DE_REFERENCIA.getTime()) / (7 * UM_DIA_MS));
+  const semanas = Math.round(diasEntre(SEGUNDA_DE_REFERENCIA, dataInicio) / 7);
   const total = CATALOGO_DESAFIOS.length;
   return CATALOGO_DESAFIOS[((semanas % total) + total) % total];
 }
@@ -801,11 +772,11 @@ function desafioDaSemanaDe(dataInicio: string): Desafio {
 }
 
 export function desafioDaSemana(): Desafio {
-  return desafioDaSemanaDe(inicioDaSemana(new Date()));
+  return desafioDaSemanaDe(inicioDaSemana(hojeISO()));
 }
 
 export function proximoDesafio(): Desafio {
-  return desafioDaSemanaDe(somarDias(inicioDaSemana(new Date()), 7));
+  return desafioDaSemanaDe(somarDias(inicioDaSemana(hojeISO()), 7));
 }
 
 export interface DiaDoDesafio {
@@ -830,7 +801,7 @@ function avaliarDesafio(idUsuario: string, desafio: Desafio): AvaliacaoDesafio {
   const datas = Array.from({ length: 7 }, (_, i) => somarDias(desafio.dataInicio, i));
   const agua = pontosHidratacao(idUsuario, datas);
   const sono = pontosSono(idUsuario, datas);
-  const hoje = hojeLocal();
+  const hoje = hojeISO();
 
   const contou = (i: number): boolean => {
     switch (desafio.modelo) {
@@ -874,7 +845,7 @@ export function avaliarDesafioDaSemana(idUsuario: string): AvaliacaoDesafio {
 // Grava desafio e participação da semana atual e fecha a da semana anterior.
 function atualizarDesafios(idUsuario: string): void {
   const cadastro = dataCadastroLocal(idUsuario);
-  const semanaAtual = inicioDaSemana(new Date());
+  const semanaAtual = inicioDaSemana(hojeISO());
   const semanas = [somarDias(semanaAtual, -7), semanaAtual].filter(
     // Só semanas que terminam depois do cadastro.
     (inicio) => cadastro === null || somarDias(inicio, 6) >= cadastro,
@@ -918,7 +889,7 @@ export interface ResultadoDesafio {
 
 // Desafios de semanas anteriores, do mais recente para o mais antigo.
 export function listarDesafiosAnteriores(idUsuario: string, limite: number): ResultadoDesafio[] {
-  const semanaAtual = inicioDaSemana(new Date());
+  const semanaAtual = inicioDaSemana(hojeISO());
   return banco.participacoesDesafio
     .filter((p) => p.idUsuario === idUsuario)
     .map((participacao) => ({

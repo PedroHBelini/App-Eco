@@ -3,10 +3,11 @@ import { StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import CampoTexto from '../components/CampoTexto';
 import { DISTANCIA_DO_TECLADO, useModuloStyles } from '../components/ModuloLayout';
-import { cadastrarUsuario, definirMetaHidratacao, validarDadosPerfil } from '../data/repository';
+import { cadastrarUsuario, definirMetaHidratacao, validarDadosPerfil, validarMetaHidratacao } from '../data/repository';
 import { Usuario } from '../models/types';
 import { Cores } from '../theme/cores';
 import { useEstilos } from '../theme/TemaContext';
+import { lerNumero } from '../utils/entrada';
 
 type CampoRef = React.ComponentRef<typeof TextInput>;
 
@@ -29,14 +30,10 @@ export default function Cadastro({ onCadastroConcluido }: Props) {
 
   function handleCadastrar() {
     // Mesmas regras da edição de perfil: campos preenchidos, email válido, nickname e email únicos.
-    const problema = validarDadosPerfil({ nome, nickname, email });
+    const valorMeta = lerNumero(metaMl);
+    const problema = validarDadosPerfil({ nome, nickname, email }) ?? validarMetaHidratacao(valorMeta);
     if (problema) {
       setErro(problema);
-      return;
-    }
-    const valorMeta = Number(metaMl);
-    if (!valorMeta || valorMeta <= 0) {
-      setErro('Informe uma meta de hidratação válida, em ml.');
       return;
     }
 

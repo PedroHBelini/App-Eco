@@ -17,12 +17,14 @@ import {
   excluirUsuario,
   listarConfiguracoesAlerta,
   validarDadosPerfil,
+  validarMetaHidratacao,
   validarMetaSono,
 } from '../data/repository';
 import { TipoAlerta, Usuario } from '../models/types';
 import { Cores } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
 import { formatarHoras, formatarNumero } from '../utils/formatacao';
+import { lerNumero } from '../utils/entrada';
 
 interface Props {
   usuario: Usuario;
@@ -178,17 +180,13 @@ function SecaoMetas({ usuario }: Props) {
   const sonoRef = useRef<CampoRef>(null);
 
   function salvar() {
-    const textoAgua = valorAgua.trim();
+    const ml = lerNumero(valorAgua);
+    // A meta de sono é opcional: campo vazio = continuar sem meta.
     const textoSono = valorSono.trim();
-    const ml = Number(textoAgua);
-    if (!/^\d+$/.test(textoAgua) || ml <= 0) {
-      setErro('Informe a meta de hidratação em ml, como 2000.');
-      setFeedback('');
-      return;
-    }
-    const horas = Number(textoSono.replace(',', '.'));
-    if (textoSono && (!/^\d+(?:[.,]\d+)?$/.test(textoSono) || !validarMetaSono(horas))) {
-      setErro('Informe a meta de sono entre 0 e 18 horas, como 8 ou 7,5.');
+    const horas = lerNumero(textoSono);
+    const problema = validarMetaHidratacao(ml) ?? (textoSono ? validarMetaSono(horas) : null);
+    if (problema) {
+      setErro(problema);
       setFeedback('');
       return;
     }

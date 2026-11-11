@@ -22,6 +22,7 @@ import { useAtualizarAoFocar } from '../hooks/useAtualizarAoFocar';
 import { Medalha, Usuario } from '../models/types';
 import { Cores } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
+import { hojeISO } from '../utils/datas';
 import { dataDeHojePorExtenso, formatarHoras, formatarNumero, nomeMes } from '../utils/formatacao';
 
 interface Props {
@@ -29,11 +30,6 @@ interface Props {
 }
 
 type NomeIcone = React.ComponentProps<typeof Ionicons>['name'];
-
-function hojeISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 function BarraProgresso({ fracao }: { fracao: number }) {
   const estilos = useEstilos(criarEstilos);
