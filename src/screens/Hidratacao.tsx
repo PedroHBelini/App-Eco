@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import AvisoMedalha from '../components/AvisoMedalha';
 import ModuloLayout, { moduloStyles } from '../components/ModuloLayout';
 import {
   buscarMetaHidratacaoAtiva,
@@ -8,8 +9,9 @@ import {
   listarIngestoesDoDia,
   registrarIngestao,
   validarQuantidadeIngestao,
+  verificarMedalhas,
 } from '../data/repository';
-import { Usuario } from '../models/types';
+import { Medalha, Usuario } from '../models/types';
 
 interface Props {
   usuario: Usuario;
@@ -20,6 +22,7 @@ const ATALHOS_ML = [200, 300, 500];
 export default function Hidratacao({ usuario }: Props) {
   const [quantidade, setQuantidade] = useState('');
   const [erro, setErro] = useState('');
+  const [novasMedalhas, setNovasMedalhas] = useState<Medalha[]>([]);
   const [, forcarAtualizacao] = useState(0);
 
   const meta = buscarMetaHidratacaoAtiva(usuario.idUsuario);
@@ -34,6 +37,7 @@ export default function Hidratacao({ usuario }: Props) {
     }
 
     registrarIngestao(usuario.idUsuario, quantidadeMl);
+    setNovasMedalhas(verificarMedalhas(usuario.idUsuario));
     setQuantidade('');
     setErro('');
     forcarAtualizacao((n) => n + 1);
@@ -88,6 +92,7 @@ export default function Hidratacao({ usuario }: Props) {
         </View>
 
         {erro ? <Text style={styles.erro} accessibilityRole="alert">{erro}</Text> : null}
+        <AvisoMedalha medalhas={novasMedalhas} />
         <Text style={styles.historicoTitulo}>Registros de hoje</Text>
       </View>
       <FlatList
