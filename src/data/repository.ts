@@ -236,6 +236,15 @@ export function registrarIngestao(idUsuario: string, quantidadeMl: number): Regi
   return registro;
 }
 
+// Remove um registro feito por engano. Retorna false se ele não existir (ou for de outro usuário).
+export function removerIngestao(idUsuario: string, idIngestao: string): boolean {
+  const existe = banco.ingestoes.some((i) => i.idIngestao === idIngestao && i.idUsuario === idUsuario);
+  if (!existe) return false;
+  banco.ingestoes = banco.ingestoes.filter((i) => i.idIngestao !== idIngestao);
+  persistir();
+  return true;
+}
+
 export function listarIngestoesDoDia(idUsuario: string): RegistroIngestaoAgua[] {
   const hoje = hojeLocal();
   return banco.ingestoes.filter(
@@ -780,7 +789,9 @@ function atualizarDesafios(idUsuario: string): void {
     const participacao: ParticipacaoDesafio = {
       idDesafio: desafio.idDesafio,
       idUsuario,
-      pontuacao: Math.max(existente?.pontuacao ?? 0, avaliacao.pontuacao),
+      // Pontos dos dias seguem o histórico (remover um registro feito por engano tira os pontos dele);
+      // o bônus acompanha a conclusão, que é permanente.
+      pontuacao: avaliacao.atual * PONTOS_POR_DIA + (concluido ? BONUS_CONCLUSAO : 0),
       concluido,
       dataConclusao: existente?.dataConclusao ?? (concluido ? new Date().toISOString() : null),
       posicao: existente?.posicao ?? null,

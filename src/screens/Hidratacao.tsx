@@ -1,6 +1,6 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import React, { useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
 import CampoTexto from '../components/CampoTexto';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
@@ -13,10 +13,11 @@ import {
   definirAtalhoHidratacao,
   listarIngestoesDoDia,
   registrarIngestao,
+  removerIngestao,
   validarAtalhoHidratacao,
   validarQuantidadeIngestao,
 } from '../data/repository';
-import { Medalha, Usuario } from '../models/types';
+import { Medalha, RegistroIngestaoAgua, Usuario } from '../models/types';
 import { Cores } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
 
@@ -57,6 +58,23 @@ export default function Hidratacao({ usuario }: Props) {
     setQuantidade('');
     setErro('');
     forcarAtualizacao((n) => n + 1);
+  }
+
+  function confirmarRemocao(registro: RegistroIngestaoAgua) {
+    const horario = new Date(registro.dataHora).toLocaleTimeString().slice(0, 5);
+    Alert.alert('Remover registro?', `${registro.quantidadeMl} ml às ${horario} será removido do seu histórico.`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: () => {
+          removerIngestao(usuario.idUsuario, registro.idIngestao);
+          atualizarGamificacao(usuario.idUsuario);
+          setNovasMedalhas([]);
+          forcarAtualizacao((n) => n + 1);
+        },
+      },
+    ]);
   }
 
   function registrarQuantidadeDigitada() {
@@ -185,8 +203,17 @@ export default function Hidratacao({ usuario }: Props) {
         keyExtractor={(item) => item.idIngestao}
         renderItem={({ item }) => (
           <View style={styles.itemHistorico}>
-            <Text style={modulo.valor}>{item.quantidadeMl} ml</Text>
+            <Text style={[modulo.valor, styles.itemQuantidade]}>{item.quantidadeMl} ml</Text>
             <Text style={styles.horario}>{new Date(item.dataHora).toLocaleTimeString().slice(0, 5)}</Text>
+            <TouchableOpacity
+              onPress={() => confirmarRemocao(item)}
+              style={styles.remover}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`Remover ${item.quantidadeMl} ml das ${new Date(item.dataHora).toLocaleTimeString().slice(0, 5)}`}
+            >
+              <Ionicons name="trash-outline" size={18} color={cores.textoSuave} />
+            </TouchableOpacity>
           </View>
         )}
         ListEmptyComponent={<Text style={styles.horario}>Nenhum registro ainda hoje.</Text>}
@@ -238,11 +265,14 @@ function criarEstilos(c: Cores) {
     lista: { flex: 1 },
     itemHistorico: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 12,
       paddingVertical: 12,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.borda,
     },
     horario: { color: c.textoSuave },
+    itemQuantidade: { flex: 1 },
+    remover: { padding: 4 },
   });
 }
