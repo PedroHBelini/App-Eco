@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import GraficoBarras, { BarraGrafico } from '../components/GraficoBarras';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
+import { useAtualizarAoFocar } from '../hooks/useAtualizarAoFocar';
 import {
   buscarMetaHidratacaoAtiva,
   buscarMetaSonoAtiva,
@@ -100,8 +101,18 @@ export default function Relatorios({ usuario }: Props) {
   const [periodo, setPeriodo] = useState<Periodo>('SEMANA');
   const dias = DIAS_POR_PERIODO[periodo];
 
-  const hidratacao = useMemo(() => serieHidratacao(usuario.idUsuario, dias), [usuario.idUsuario, dias]);
-  const sono = useMemo(() => serieSono(usuario.idUsuario, dias), [usuario.idUsuario, dias]);
+  // Relê o histórico sempre que a aba volta ao foco (ex.: depois de registrar água).
+  const versao = useAtualizarAoFocar();
+  const hidratacao = useMemo(
+    () => serieHidratacao(usuario.idUsuario, dias),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [usuario.idUsuario, dias, versao],
+  );
+  const sono = useMemo(
+    () => serieSono(usuario.idUsuario, dias),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [usuario.idUsuario, dias, versao],
+  );
   const resumoHidratacao = resumir(hidratacao);
   const resumoSono = resumir(sono);
   const metaHidratacao = buscarMetaHidratacaoAtiva(usuario.idUsuario);

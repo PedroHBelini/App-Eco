@@ -60,6 +60,7 @@ export default function Hidratacao({ usuario }: Props) {
 
   return (
     <ModuloLayout
+      voltar
       titulo="Hidratação"
       descricao={`Meta diária: ${meta ? `${meta.valorMeta} ml` : 'não definida'}`}
       scrollable={false}

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import CartaoDesafio from '../components/CartaoDesafio';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
+import { useAtualizarAoFocar } from '../hooks/useAtualizarAoFocar';
 import {
   atualizarGamificacao,
   avaliarDesafioDaSemana,
@@ -118,11 +119,9 @@ export default function Gamificacao({ usuario }: Props) {
   const styles = useModuloStyles();
   const estilos = useEstilos(criarEstilos);
   const recordes = calcularRecordes(usuario.idUsuario);
-  // Ao abrir a tela, libera também medalhas cujo critério já foi atingido (ex.: histórico anterior às medalhas).
-  const [medalhas] = useState(() => {
-    atualizarGamificacao(usuario.idUsuario);
-    return listarMedalhas(usuario.idUsuario);
-  });
+  // A cada foco da aba: fecha desafios e libera medalhas cujo critério já foi atingido, depois relê tudo.
+  useAtualizarAoFocar(() => atualizarGamificacao(usuario.idUsuario));
+  const medalhas = listarMedalhas(usuario.idUsuario);
   const conquistadas = medalhas.filter((m) => m.dataConquista !== null).length;
   const desafio = avaliarDesafioDaSemana(usuario.idUsuario);
   const anteriores = listarDesafiosAnteriores(usuario.idUsuario, 4);
