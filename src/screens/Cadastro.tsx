@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { cadastrarUsuario, definirMetaHidratacao } from '../data/mockRepository';
+import { cadastrarUsuario, definirMetaHidratacao } from '../data/repository';
 import { Usuario } from '../models/types';
 
 interface Props {

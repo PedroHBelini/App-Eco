@@ -8,7 +8,7 @@ import {
   listarIngestoesDoDia,
   registrarIngestao,
   validarQuantidadeIngestao,
-} from '../data/mockRepository';
+} from '../data/repository';
 import { Usuario } from '../models/types';
 
 interface Props {
