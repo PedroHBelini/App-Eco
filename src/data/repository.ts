@@ -59,24 +59,67 @@ function bancoVazio(): Banco {
   };
 }
 
+// Cópia de segurança do conteúdo que não pôde ser lido, para não ser perdido ao gravar por cima.
+const CHAVE_BACKUP_ILEGIVEL = '@appeco/banco-ilegivel';
+
 // Cache em memória: as leituras são síncronas e cada alteração é gravada no AsyncStorage.
 let banco: Banco = bancoVazio();
 let filaGravacao: Promise<void> = Promise.resolve();
+// Ligado quando não dá para garantir que gravar não apagaria dados salvos: o app funciona, mas não grava.
+let gravacaoBloqueada = false;
+
+function ehObjeto(valor: unknown): valor is Record<string, unknown> {
+  return typeof valor === 'object' && valor !== null && !Array.isArray(valor);
+}
+
+// Lugar das migrações futuras: cada mudança de formato sobe VERSAO_BANCO e ganha um passo aqui.
+function migrar(dados: Partial<Banco>): Banco {
+  return { ...bancoVazio(), ...dados, versao: VERSAO_BANCO };
+}
 
 export async function carregarBanco(): Promise<void> {
+  let json: string | null;
   try {
-    const json = await AsyncStorage.getItem(CHAVE_BANCO);
-    if (json) {
-      banco = { ...bancoVazio(), ...(JSON.parse(json) as Partial<Banco>) };
-    }
+    json = await AsyncStorage.getItem(CHAVE_BANCO);
   } catch (erro) {
-    console.warn('Não foi possível carregar os dados salvos.', erro);
-    banco = bancoVazio();
+    // Falha de leitura do armazenamento: os dados podem estar lá, intactos. Não gravar por cima.
+    console.warn('Não foi possível ler os dados salvos; as alterações não serão gravadas nesta sessão.', erro);
+    gravacaoBloqueada = true;
+    return;
   }
+  if (!json) return; // primeiro uso
+
+  let dados: unknown;
+  try {
+    dados = JSON.parse(json);
+  } catch {
+    dados = undefined;
+  }
+
+  if (!ehObjeto(dados)) {
+    // Conteúdo corrompido: guarda uma cópia antes de começar do zero, para dar chance de recuperação.
+    console.warn('Os dados salvos estão corrompidos; uma cópia foi guardada e o app começou do zero.');
+    try {
+      await AsyncStorage.setItem(CHAVE_BACKUP_ILEGIVEL, json);
+    } catch (erro) {
+      console.warn('Não foi possível guardar a cópia dos dados corrompidos; as alterações não serão gravadas.', erro);
+      gravacaoBloqueada = true;
+    }
+    return;
+  }
+
+  const versao = typeof dados.versao === 'number' ? dados.versao : 1;
+  if (versao > VERSAO_BANCO) {
+    // Dados gravados por uma versão mais nova do app: lê o que der, mas não grava num formato antigo por cima.
+    console.warn('Os dados foram salvos por uma versão mais nova do app; as alterações não serão gravadas.');
+    gravacaoBloqueada = true;
+  }
+  banco = migrar(dados as Partial<Banco>);
 }
 
 // As gravações são enfileiradas para que um snapshot antigo nunca sobrescreva um mais novo.
 function persistir(): Promise<void> {
+  if (gravacaoBloqueada) return filaGravacao;
   const snapshot = JSON.stringify(banco);
   filaGravacao = filaGravacao
     .then(() => AsyncStorage.setItem(CHAVE_BANCO, snapshot))
