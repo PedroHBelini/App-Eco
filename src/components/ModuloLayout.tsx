@@ -116,15 +116,6 @@ function criarModuloStyles(c: Cores) {
     barra: { height: '100%', backgroundColor: c.primaria },
     alertaTexto: { flex: 1 },
     medalha: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    medalhaSelo: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: c.ouro,
-    },
-    medalhaInicial: { color: c.ouroTexto, fontSize: 17, fontWeight: '700' },
     medalhaDescricao: { flex: 1 },
     estado: { color: c.textoSuave, fontSize: 12, fontWeight: '600' },
   });

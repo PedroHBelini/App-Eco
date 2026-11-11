@@ -2,6 +2,7 @@ import { Link } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Medalha } from '../models/types';
+import SeloMedalha from './SeloMedalha';
 import { Cores } from '../theme/cores';
 import { useEstilos } from '../theme/TemaContext';
 
@@ -18,9 +19,12 @@ export default function AvisoMedalha({ medalhas }: Props) {
     <View style={styles.caixa} accessibilityLiveRegion="polite">
       <Text style={styles.titulo}>{medalhas.length === 1 ? 'Nova medalha!' : `${medalhas.length} novas medalhas!`}</Text>
       {medalhas.map((m) => (
-        <Text key={m.idMedalha} style={styles.texto}>
-          <Text style={styles.nome}>{m.nome}</Text> · {m.descricao}
-        </Text>
+        <View key={m.idMedalha} style={styles.medalha}>
+          <SeloMedalha idMedalha={m.idMedalha} conquistada tamanho={34} />
+          <Text style={[styles.texto, styles.descricao]}>
+            <Text style={styles.nome}>{m.nome}</Text> · {m.descricao}
+          </Text>
+        </View>
       ))}
       <Link href="/gamificacao" style={styles.link}>
         Ver conquistas
@@ -34,6 +38,8 @@ function criarEstilos(c: Cores) {
     caixa: { backgroundColor: c.ouroSuave, borderWidth: 1, borderColor: c.ouro, borderRadius: 12, padding: 12, marginTop: 12 },
     titulo: { color: c.aviso, fontSize: 15, fontWeight: '700', marginBottom: 4 },
     texto: { color: c.textoSecundario, fontSize: 13, lineHeight: 19 },
+    medalha: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 6 },
+    descricao: { flex: 1 },
     nome: { color: c.texto, fontWeight: '700' },
     link: { color: c.texto, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline', marginTop: 8 },
   });
