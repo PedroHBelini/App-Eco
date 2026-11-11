@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { buscarMetaHidratacaoAtiva, calcularTotalIngeridoHoje } from '../data/mockRepository';
+import { buscarMetaHidratacaoAtiva, calcularTotalIngeridoHoje } from '../data/repository';
 import { useUsuario } from '../context/UsuarioContext';
 import ModuloLayout, { moduloStyles as styles } from '../components/ModuloLayout';
 
@@ -22,7 +22,7 @@ export default function Relatorios() {
       </View>
       <View style={styles.secao}>
         <Text style={styles.secaoTitulo}>Visão semanal e mensal</Text>
-        <Text style={styles.texto}>Ainda não há histórico suficiente para montar os gráficos. Os registros desta sessão não são mantidos após fechar o aplicativo.</Text>
+        <Text style={styles.texto}>Ainda não há histórico suficiente para montar os gráficos.</Text>
       </View>
       <View style={styles.secao}>
         <Text style={styles.secaoTitulo}>Dados previstos</Text>

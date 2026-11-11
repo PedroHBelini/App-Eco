@@ -1,15 +1,20 @@
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import React from 'react';
 import Cadastro from '../screens/Cadastro';
 import { useUsuario } from '../context/UsuarioContext';
 
 export default function CadastroRoute() {
-  const { setUsuario } = useUsuario();
+  const { usuario, setUsuario } = useUsuario();
+
+  // Usuário já salvo no aparelho: pula o cadastro.
+  if (usuario) {
+    return <Redirect href="/menu" />;
+  }
 
   return (
     <Cadastro
-      onCadastroConcluido={(usuario) => {
-        setUsuario(usuario);
+      onCadastroConcluido={(novoUsuario) => {
+        setUsuario(novoUsuario);
         router.replace('/menu');
       }}
     />

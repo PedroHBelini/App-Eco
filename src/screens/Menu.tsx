@@ -25,7 +25,6 @@ export default function Menu({ usuario }: Props) {
         {modulos.map((modulo) => (
           <Link key={modulo.href} href={modulo.href} style={[styles.item, { backgroundColor: modulo.cor }]}>
             <Text style={styles.itemTitulo}>{modulo.titulo}</Text>
-            <Text style={styles.itemDetalhe}>{modulo.detalhe}</Text>
           </Link>
         ))}
       </View>
@@ -45,5 +44,4 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   itemTitulo: { fontSize: 17, fontWeight: '700', color: '#173f4f' },
-  itemDetalhe: { fontSize: 13, color: '#4a6572', marginTop: 4 },
 });

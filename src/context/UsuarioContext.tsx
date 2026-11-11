@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { buscarUsuarioDaSessao, carregarBanco, definirUsuarioDaSessao } from '../data/repository';
 import { Usuario } from '../models/types';
 
 interface UsuarioContextValue {
@@ -9,7 +11,34 @@ interface UsuarioContextValue {
 const UsuarioContext = createContext<UsuarioContextValue | undefined>(undefined);
 
 export function UsuarioProvider({ children }: { children: React.ReactNode }) {
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [usuario, setUsuarioState] = useState<Usuario | null>(null);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    let ativo = true;
+    carregarBanco().then(() => {
+      if (!ativo) return;
+      setUsuarioState(buscarUsuarioDaSessao());
+      setCarregando(false);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
+  function setUsuario(novoUsuario: Usuario | null) {
+    definirUsuarioDaSessao(novoUsuario?.idUsuario ?? null);
+    setUsuarioState(novoUsuario);
+  }
+
+  // Segura as rotas até o banco carregar; senão elas veriam usuario = null e voltariam ao cadastro.
+  if (carregando) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f4faff' }}>
+        <ActivityIndicator color="#173f4f" />
+      </View>
+    );
+  }
 
   return (
     <UsuarioContext.Provider value={{ usuario, setUsuario }}>{children}</UsuarioContext.Provider>
