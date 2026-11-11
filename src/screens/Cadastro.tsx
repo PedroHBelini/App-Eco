@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import CampoTexto from '../components/CampoTexto';
 import { useModuloStyles } from '../components/ModuloLayout';
-import { cadastrarUsuario, definirMetaHidratacao } from '../data/repository';
+import { cadastrarUsuario, definirMetaHidratacao, validarDadosPerfil } from '../data/repository';
 import { Usuario } from '../models/types';
 import { Cores } from '../theme/cores';
 import { useEstilos } from '../theme/TemaContext';
@@ -21,8 +21,10 @@ export default function Cadastro({ onCadastroConcluido }: Props) {
   const [erro, setErro] = useState('');
 
   function handleCadastrar() {
-    if (!nome.trim() || !nickname.trim() || !email.trim()) {
-      setErro('Preencha nome, nickname e email.');
+    // Mesmas regras da edição de perfil: campos preenchidos, email válido, nickname e email únicos.
+    const problema = validarDadosPerfil({ nome, nickname, email });
+    if (problema) {
+      setErro(problema);
       return;
     }
     const valorMeta = Number(metaMl);
@@ -60,7 +62,7 @@ export default function Cadastro({ onCadastroConcluido }: Props) {
         placeholder="Meta diária de hidratação (ml)"
         value={metaMl}
         onChangeText={setMetaMl}
-        keyboardType="numeric"
+        keyboardType="number-pad"
       />
 
       {erro ? <Text style={modulo.erro}>{erro}</Text> : null}
