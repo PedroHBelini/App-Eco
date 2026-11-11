@@ -65,3 +65,7 @@ const escuro: Cores = {
 };
 
 export const TEMAS: Record<ModoTema, Cores> = { claro, escuro };
+
+// Fonte da marca (título "Ciclo"). Carregada em src/app/_layout.tsx; o resto do app usa a fonte do sistema.
+// Com fonte própria não se usa fontWeight: o peso já vem no arquivo (700 = negrito).
+export const FONTE_MARCA = 'Comfortaa_700Bold';

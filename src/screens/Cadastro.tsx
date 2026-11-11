@@ -5,7 +5,7 @@ import CampoTexto from '../components/CampoTexto';
 import { DISTANCIA_DO_TECLADO, useModuloStyles } from '../components/ModuloLayout';
 import { cadastrarUsuario, definirMetaHidratacao, validarDadosPerfil, validarMetaHidratacao } from '../data/repository';
 import { Usuario } from '../models/types';
-import { Cores } from '../theme/cores';
+import { Cores, FONTE_MARCA } from '../theme/cores';
 import { useEstilos } from '../theme/TemaContext';
 import { lerNumero } from '../utils/entrada';
 
@@ -111,7 +111,7 @@ function criarEstilos(c: Cores) {
   return StyleSheet.create({
     container: { flexGrow: 1, justifyContent: 'center', padding: 24, backgroundColor: c.fundo },
     logo: { width: 88, height: 88, alignSelf: 'center', marginBottom: 12 },
-    titulo: { fontSize: 32, fontWeight: '800', color: c.texto, textAlign: 'center', letterSpacing: -0.5 },
+    titulo: { fontFamily: FONTE_MARCA, fontSize: 38, color: c.texto, textAlign: 'center', marginBottom: 4 },
     slogan: { fontSize: 15, color: c.primaria, fontWeight: '600', textAlign: 'center', marginBottom: 24 },
     subtitulo: { fontSize: 15, color: c.textoSecundario, marginBottom: 16 },
   });
