@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ConfiguracaoAlerta,
   ConsumoRecurso,
+  IdMedalha,
+  Medalha,
   Meta,
   RegistroIngestaoAgua,
   Recorde,
@@ -11,7 +13,9 @@ import {
   TipoRecorde,
   TipoRecurso,
   Usuario,
+  UsuarioMedalha,
 } from '../models/types';
+import { CATALOGO_MEDALHAS } from './catalogoMedalhas';
 
 const CHAVE_BANCO = '@appeco/banco';
 const VERSAO_BANCO = 1;
@@ -25,6 +29,7 @@ interface Banco {
   registrosSono: RegistroSono[];
   consumos: ConsumoRecurso[];
   configuracoesAlerta: ConfiguracaoAlerta[];
+  usuarioMedalhas: UsuarioMedalha[];
 }
 
 function bancoVazio(): Banco {
@@ -37,6 +42,7 @@ function bancoVazio(): Banco {
     registrosSono: [],
     consumos: [],
     configuracoesAlerta: [],
+    usuarioMedalhas: [],
   };
 }
 
@@ -474,4 +480,102 @@ export function calcularRecordes(idUsuario: string): Recorde[] {
     calcularRecorde(idUsuario, 'SEQUENCIA_HIDRATACAO', serieHidratacao(idUsuario, dias)),
     calcularRecorde(idUsuario, 'SEQUENCIA_SONO', serieSono(idUsuario, dias)),
   ];
+}
+
+// ---- Gamificação: medalhas ----
+
+export interface ProgressoMedalha {
+  atual: number;
+  alvo: number;
+}
+
+interface Avaliacao {
+  atingida: boolean;
+  progresso?: ProgressoMedalha; // só para medalhas com meta numérica
+}
+
+export interface SituacaoMedalha {
+  medalha: Medalha;
+  dataConquista: string | null; // null = ainda bloqueada
+  progresso?: ProgressoMedalha;
+}
+
+function porQuantidade(atual: number, alvo: number): Avaliacao {
+  return { atingida: atual >= alvo, progresso: { atual: Math.min(atual, alvo), alvo } };
+}
+
+// Houve algum mês com consumo menor que o do mês imediatamente anterior, para o mesmo recurso?
+function houveEconomia(idUsuario: string): boolean {
+  const consumos = banco.consumos.filter((c) => c.idUsuario === idUsuario);
+  return consumos.some((atual) => {
+    const mesAnterior = atual.mesReferencia === 1 ? 12 : atual.mesReferencia - 1;
+    const anoAnterior = atual.mesReferencia === 1 ? atual.anoReferencia - 1 : atual.anoReferencia;
+    const anterior = consumos.find(
+      (c) => c.tipoRecurso === atual.tipoRecurso && c.mesReferencia === mesAnterior && c.anoReferencia === anoAnterior,
+    );
+    return anterior !== undefined && atual.quantidade < anterior.quantidade;
+  });
+}
+
+// Avalia todo o catálogo de uma vez, reaproveitando as séries do histórico.
+function avaliarMedalhas(idUsuario: string): Record<IdMedalha, Avaliacao> {
+  const dias = diasDesdeCadastro(idUsuario);
+  const agua = serieHidratacao(idUsuario, dias);
+  const sono = serieSono(idUsuario, dias);
+  const recordeAgua = calcularRecorde(idUsuario, 'SEQUENCIA_HIDRATACAO', agua);
+  const recordeSono = calcularRecorde(idUsuario, 'SEQUENCIA_SONO', sono);
+
+  const ingestoes = banco.ingestoes.filter((i) => i.idUsuario === idUsuario);
+  const totalIngeridoMl = ingestoes.reduce((total, i) => total + i.quantidadeMl, 0);
+  const noites = banco.registrosSono.filter((r) => r.idUsuario === idUsuario).length;
+  const contas = banco.consumos.filter((c) => c.idUsuario === idUsuario).length;
+
+  return {
+    PRIMEIRO_GOLE: { atingida: ingestoes.length > 0 },
+    HIDRATADO: { atingida: agua.some(metaAtingida) },
+    SEMANA_HIDRATADA: porQuantidade(recordeAgua.maiorSequencia, 7),
+    MES_HIDRATADO: porQuantidade(recordeAgua.maiorSequencia, 30),
+    // Progresso em litros, para caber na tela.
+    CINQUENTA_LITROS: porQuantidade(Math.floor(totalIngeridoMl / 1000), 50),
+    PRIMEIRA_NOITE: { atingida: noites > 0 },
+    BEM_DESCANSADO: porQuantidade(recordeSono.maiorSequencia, 7),
+    EQUILIBRIO: { atingida: agua.some((ponto, i) => metaAtingida(ponto) && metaAtingida(sono[i])) },
+    CONTA_EM_DIA: { atingida: contas > 0 },
+    ECONOMIA: { atingida: houveEconomia(idUsuario) },
+  };
+}
+
+// Libera as medalhas cujo critério foi atingido e retorna só as novas, para a tela comemorar.
+export function verificarMedalhas(idUsuario: string): Medalha[] {
+  const avaliacoes = avaliarMedalhas(idUsuario);
+  const jaConquistadas = new Set(
+    banco.usuarioMedalhas.filter((um) => um.idUsuario === idUsuario).map((um) => um.idMedalha),
+  );
+  const novas = CATALOGO_MEDALHAS.filter(
+    (m) => !jaConquistadas.has(m.idMedalha) && avaliacoes[m.idMedalha].atingida,
+  );
+
+  if (novas.length > 0) {
+    const agora = new Date().toISOString();
+    banco.usuarioMedalhas = [
+      ...banco.usuarioMedalhas,
+      ...novas.map((m) => ({ idUsuario, idMedalha: m.idMedalha, dataConquista: agora })),
+    ];
+    persistir();
+  }
+  return novas;
+}
+
+export function listarMedalhas(idUsuario: string): SituacaoMedalha[] {
+  const avaliacoes = avaliarMedalhas(idUsuario);
+  return CATALOGO_MEDALHAS.map((medalha) => {
+    const conquista = banco.usuarioMedalhas.find(
+      (um) => um.idUsuario === idUsuario && um.idMedalha === medalha.idMedalha,
+    );
+    return {
+      medalha,
+      dataConquista: conquista?.dataConquista ?? null,
+      progresso: conquista ? undefined : avaliacoes[medalha.idMedalha].progresso,
+    };
+  });
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import AvisoMedalha from '../components/AvisoMedalha';
 import ModuloLayout, { moduloStyles as styles } from '../components/ModuloLayout';
 import {
   buscarMetaSonoAtiva,
@@ -8,8 +9,9 @@ import {
   listarRegistrosSono,
   registrarSono,
   validarMetaSono,
+  verificarMedalhas,
 } from '../data/repository';
-import { Usuario } from '../models/types';
+import { Medalha, Usuario } from '../models/types';
 import { formatarDiaMes, formatarHoras } from '../utils/formatacao';
 
 interface Props {
@@ -30,6 +32,10 @@ export default function Sono({ usuario }: Props) {
   const [erroMeta, setErroMeta] = useState('');
   const [feedbackMeta, setFeedbackMeta] = useState('');
 
+  // Separados para o aviso aparecer junto do botão que causou a conquista.
+  const [medalhasDoRegistro, setMedalhasDoRegistro] = useState<Medalha[]>([]);
+  const [medalhasDaMeta, setMedalhasDaMeta] = useState<Medalha[]>([]);
+
   const ultimoRegistro = registros[0];
 
   function salvarRegistro() {
@@ -42,6 +48,8 @@ export default function Sono({ usuario }: Props) {
     setRegistros(listarRegistrosSono(usuario.idUsuario));
     setErro('');
     setFeedback(`Duração registrada: ${formatarHoras(registro.duracaoHoras)}`);
+    setMedalhasDoRegistro(verificarMedalhas(usuario.idUsuario));
+    setMedalhasDaMeta([]);
     setDormir('');
     setAcordar('');
   }
@@ -57,6 +65,8 @@ export default function Sono({ usuario }: Props) {
     setMeta(definirMetaSono(usuario.idUsuario, horas));
     setErroMeta('');
     setFeedbackMeta('Meta salva.');
+    setMedalhasDaMeta(verificarMedalhas(usuario.idUsuario));
+    setMedalhasDoRegistro([]);
   }
 
   return (
@@ -72,6 +82,7 @@ export default function Sono({ usuario }: Props) {
           <Text style={styles.botaoTexto}>Salvar registro</Text>
         </TouchableOpacity>
         {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
+        <AvisoMedalha medalhas={medalhasDoRegistro} />
       </View>
 
       <View style={styles.secao}>
@@ -99,6 +110,7 @@ export default function Sono({ usuario }: Props) {
           <Text style={styles.botaoTexto}>{meta ? 'Atualizar meta' : 'Definir meta'}</Text>
         </TouchableOpacity>
         {feedbackMeta ? <Text style={styles.feedback}>{feedbackMeta}</Text> : null}
+        <AvisoMedalha medalhas={medalhasDaMeta} />
       </View>
 
       <View style={styles.secao}>

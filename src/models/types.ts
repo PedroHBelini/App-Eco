@@ -70,3 +70,30 @@ export interface Recorde {
   hojeConcluido: boolean; // a meta de hoje já foi batida
   dataAtualizacao: string; // AAAA-MM-DD
 }
+
+export type IdMedalha =
+  | 'PRIMEIRO_GOLE'
+  | 'HIDRATADO'
+  | 'SEMANA_HIDRATADA'
+  | 'MES_HIDRATADO'
+  | 'CINQUENTA_LITROS'
+  | 'PRIMEIRA_NOITE'
+  | 'BEM_DESCANSADO'
+  | 'EQUILIBRIO'
+  | 'CONTA_EM_DIA'
+  | 'ECONOMIA';
+
+// Catálogo fixo (tabela MEDALHA).
+export interface Medalha {
+  idMedalha: IdMedalha;
+  nome: string;
+  descricao: string;
+  criterio: string;
+}
+
+// Conquista de um usuário (tabela USUARIO_MEDALHA). Gravada uma única vez e nunca removida.
+export interface UsuarioMedalha {
+  idUsuario: string;
+  idMedalha: IdMedalha;
+  dataConquista: string; // ISO
+}

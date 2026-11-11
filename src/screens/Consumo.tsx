@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import AvisoMedalha from '../components/AvisoMedalha';
 import ModuloLayout, { moduloStyles as styles } from '../components/ModuloLayout';
-import { listarConsumos, registrarConsumo, unidadeDoRecurso, validarConsumo } from '../data/repository';
-import { TipoRecurso, Usuario } from '../models/types';
+import { listarConsumos, registrarConsumo, unidadeDoRecurso, validarConsumo, verificarMedalhas } from '../data/repository';
+import { Medalha, TipoRecurso, Usuario } from '../models/types';
 
 interface Props {
   usuario: Usuario;
@@ -20,6 +21,7 @@ export default function Consumo({ usuario }: Props) {
   const [registros, setRegistros] = useState(() => listarConsumos(usuario.idUsuario));
   const [erro, setErro] = useState('');
   const [feedback, setFeedback] = useState('');
+  const [novasMedalhas, setNovasMedalhas] = useState<Medalha[]>([]);
 
   function salvarRegistro() {
     const matchPeriodo = periodo.trim().match(/^(\d{4})-(\d{2})$/);
@@ -39,6 +41,7 @@ export default function Consumo({ usuario }: Props) {
     );
     registrarConsumo(usuario.idUsuario, recurso, mes, ano, valor);
     setRegistros(listarConsumos(usuario.idUsuario));
+    setNovasMedalhas(verificarMedalhas(usuario.idUsuario));
     setQuantidade('');
     setErro('');
     setFeedback(
@@ -66,6 +69,7 @@ export default function Consumo({ usuario }: Props) {
           <Text style={styles.botaoTexto}>Registrar consumo</Text>
         </TouchableOpacity>
         {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
+        <AvisoMedalha medalhas={novasMedalhas} />
       </View>
       <View style={styles.secao}>
         <Text style={styles.secaoTitulo}>Histórico</Text>
