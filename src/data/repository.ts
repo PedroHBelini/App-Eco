@@ -7,6 +7,7 @@ import {
   Medalha,
   Meta,
   ParticipacaoDesafio,
+  PreferenciasUsuario,
   RegistroIngestaoAgua,
   Recorde,
   RegistroSono,
@@ -37,6 +38,7 @@ interface Banco {
   usuarioMedalhas: UsuarioMedalha[];
   desafios: Desafio[];
   participacoesDesafio: ParticipacaoDesafio[];
+  preferenciasUsuario: PreferenciasUsuario[];
 }
 
 function bancoVazio(): Banco {
@@ -53,6 +55,7 @@ function bancoVazio(): Banco {
     usuarioMedalhas: [],
     desafios: [],
     participacoesDesafio: [],
+    preferenciasUsuario: [],
   };
 }
 
@@ -182,6 +185,33 @@ export function definirMetaSono(idUsuario: string, horasPorNoite: number): Meta 
 
 export function buscarMetaSonoAtiva(idUsuario: string): Meta | undefined {
   return buscarMetaAtiva(idUsuario, 'SONO');
+}
+
+// ---- Atalho de hidratação ("meu copo") ----
+
+export const ATALHO_HIDRATACAO_PADRAO_ML = 250;
+
+export function validarAtalhoHidratacao(quantidadeMl: number): boolean {
+  return Number.isInteger(quantidadeMl) && quantidadeMl >= 50 && quantidadeMl <= 2000;
+}
+
+export function buscarAtalhoHidratacao(idUsuario: string): number {
+  return (
+    banco.preferenciasUsuario.find((p) => p.idUsuario === idUsuario)?.atalhoHidratacaoMl ??
+    ATALHO_HIDRATACAO_PADRAO_ML
+  );
+}
+
+export function definirAtalhoHidratacao(idUsuario: string, quantidadeMl: number): void {
+  if (!validarAtalhoHidratacao(quantidadeMl)) {
+    throw new RangeError('O atalho de hidratação deve ser um número inteiro entre 50 e 2000 ml.');
+  }
+  const atual = banco.preferenciasUsuario.find((p) => p.idUsuario === idUsuario);
+  banco.preferenciasUsuario = [
+    ...banco.preferenciasUsuario.filter((p) => p !== atual),
+    { ...atual, idUsuario, atalhoHidratacaoMl: quantidadeMl },
+  ];
+  persistir();
 }
 
 // ---- Ingestão de água ----

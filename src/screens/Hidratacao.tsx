@@ -1,3 +1,4 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
@@ -5,16 +6,19 @@ import CampoTexto from '../components/CampoTexto';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import {
   atualizarGamificacao,
+  buscarAtalhoHidratacao,
   buscarMetaHidratacaoAtiva,
   calcularProgresso,
   calcularTotalIngeridoHoje,
+  definirAtalhoHidratacao,
   listarIngestoesDoDia,
   registrarIngestao,
+  validarAtalhoHidratacao,
   validarQuantidadeIngestao,
 } from '../data/repository';
 import { Medalha, Usuario } from '../models/types';
 import { Cores } from '../theme/cores';
-import { useEstilos } from '../theme/TemaContext';
+import { useEstilos, useTema } from '../theme/TemaContext';
 
 interface Props {
   usuario: Usuario;
@@ -29,6 +33,13 @@ export default function Hidratacao({ usuario }: Props) {
   const [erro, setErro] = useState('');
   const [novasMedalhas, setNovasMedalhas] = useState<Medalha[]>([]);
   const [, forcarAtualizacao] = useState(0);
+  const { cores } = useTema();
+
+  // "Meu copo": valor personalizado do perfil, também usado no botão rápido do Início.
+  const [atalho, setAtalho] = useState(() => buscarAtalhoHidratacao(usuario.idUsuario));
+  const [editandoAtalho, setEditandoAtalho] = useState(false);
+  const [valorAtalho, setValorAtalho] = useState('');
+  const [erroAtalho, setErroAtalho] = useState('');
 
   const meta = buscarMetaHidratacaoAtiva(usuario.idUsuario);
   const totalHoje = calcularTotalIngeridoHoje(usuario.idUsuario);
@@ -58,6 +69,24 @@ export default function Hidratacao({ usuario }: Props) {
     adicionar(Number(entrada.replace(',', '.')));
   }
 
+  function alternarEdicaoAtalho() {
+    setValorAtalho(String(atalho));
+    setErroAtalho('');
+    setEditandoAtalho((editando) => !editando);
+  }
+
+  function salvarAtalho() {
+    const entrada = valorAtalho.trim();
+    const ml = Number(entrada);
+    if (!/^\d+$/.test(entrada) || !validarAtalhoHidratacao(ml)) {
+      setErroAtalho('Informe um valor inteiro entre 50 e 2000 ml.');
+      return;
+    }
+    definirAtalhoHidratacao(usuario.idUsuario, ml);
+    setAtalho(ml);
+    setEditandoAtalho(false);
+  }
+
   return (
     <ModuloLayout
       voltar
@@ -72,6 +101,50 @@ export default function Hidratacao({ usuario }: Props) {
         <Text style={styles.progressoTexto}>
           {totalHoje} ml de {meta?.valorMeta ?? 0} ml ({Math.round(progresso * 100)}%)
         </Text>
+
+        <View style={styles.meuCopo}>
+          <TouchableOpacity
+            style={styles.meuCopoBotao}
+            onPress={() => adicionar(atalho)}
+            accessibilityRole="button"
+            accessibilityLabel={`Adicionar meu copo, ${atalho} ml`}
+          >
+            <Ionicons name="water" size={20} color={cores.textoSobrePrimaria} />
+            <Text style={modulo.botaoTexto}>+{atalho} ml · Meu copo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.editarBotao, editandoAtalho && styles.editarBotaoAtivo]}
+            onPress={alternarEdicaoAtalho}
+            accessibilityRole="button"
+            accessibilityLabel="Alterar o valor do meu copo"
+          >
+            <Ionicons name={editandoAtalho ? 'close' : 'create-outline'} size={20} color={cores.primaria} />
+          </TouchableOpacity>
+        </View>
+
+        {editandoAtalho ? (
+          <View style={styles.editarAtalho}>
+            <Text style={modulo.rotulo}>Quantos ml tem o seu copo?</Text>
+            <View style={styles.linhaInput}>
+              <CampoTexto
+                style={styles.input}
+                placeholder="Ex.: 350"
+                value={valorAtalho}
+                onChangeText={(valor) => {
+                  setValorAtalho(valor);
+                  if (erroAtalho) setErroAtalho('');
+                }}
+                keyboardType="number-pad"
+                autoFocus
+              />
+              <TouchableOpacity style={styles.botao} onPress={salvarAtalho} accessibilityRole="button">
+                <Text style={modulo.botaoTexto}>Salvar</Text>
+              </TouchableOpacity>
+            </View>
+            {erroAtalho ? <Text style={[modulo.erro, styles.erroAtalho]} accessibilityRole="alert">{erroAtalho}</Text> : null}
+            <Text style={modulo.estado}>Este botão também aparece no Início para registrar com um toque.</Text>
+          </View>
+        ) : null}
 
         <View style={styles.atalhos}>
           {ATALHOS_ML.map((ml) => (
@@ -127,6 +200,28 @@ function criarEstilos(c: Cores) {
     barraFundo: { height: 14, backgroundColor: c.superficieSuave, borderRadius: 7, overflow: 'hidden' },
     barraProgresso: { height: '100%', backgroundColor: c.primaria, borderRadius: 7 },
     progressoTexto: { marginTop: 8, marginBottom: 18, color: c.texto, fontWeight: '600' },
+    meuCopo: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+    meuCopoBotao: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      backgroundColor: c.primaria,
+      borderRadius: 10,
+      paddingVertical: 14,
+    },
+    editarBotao: {
+      width: 50,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: c.bordaForte,
+    },
+    editarBotaoAtivo: { backgroundColor: c.primariaSuave, borderColor: c.primariaSuave },
+    editarAtalho: { backgroundColor: c.superficieSuave, borderRadius: 10, padding: 12, marginBottom: 12 },
+    erroAtalho: { marginTop: 8, marginBottom: 0 },
     atalhos: { flexDirection: 'row', gap: 8, marginBottom: 14 },
     atalhoBotao: {
       flex: 1,

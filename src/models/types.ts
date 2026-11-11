@@ -122,3 +122,9 @@ export interface ParticipacaoDesafio {
   dataConclusao: string | null; // ISO
   posicao: number | null;
 }
+
+// Preferências de cada perfil (não do aparelho).
+export interface PreferenciasUsuario {
+  idUsuario: string;
+  atalhoHidratacaoMl: number; // valor do botão de adição rápida ("meu copo")
+}
