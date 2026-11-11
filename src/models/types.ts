@@ -49,12 +49,15 @@ export interface ConsumoRecurso {
   unidade: string;
 }
 
+// Hidratação: lembretes a cada N horas a partir do horário. Sono: todo dia no horário. Consumo: uma vez por mês.
+export type FrequenciaAlerta = 'A_CADA_1_HORA' | 'A_CADA_2_HORAS' | 'A_CADA_3_HORAS' | 'DIARIA' | 'MENSAL';
+
 export interface ConfiguracaoAlerta {
   idConfiguracao: string;
   idUsuario: string;
   tipoAlerta: TipoAlerta;
-  horario: string; // HH:MM
-  frequencia: string;
+  horario: string; // HH:MM — na hidratação, o horário do primeiro lembrete do dia
+  frequencia: FrequenciaAlerta;
   habilitado: boolean;
 }
 

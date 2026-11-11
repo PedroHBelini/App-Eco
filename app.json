@@ -10,7 +10,8 @@
     "plugins": [
       "expo-router",
       "@react-native-vector-icons/ionicons",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true

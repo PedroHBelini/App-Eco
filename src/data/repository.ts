@@ -3,6 +3,7 @@ import {
   ConfiguracaoAlerta,
   ConsumoRecurso,
   Desafio,
+  FrequenciaAlerta,
   IdMedalha,
   Medalha,
   Meta,
@@ -118,8 +119,19 @@ export async function carregarBanco(): Promise<void> {
   banco = migrar(dados as Partial<Banco>);
 }
 
+// Quem precisa reagir a qualquer alteração dos dados (ex.: reagendar os lembretes) se inscreve aqui.
+const ouvintes = new Set<() => void>();
+
+export function aoAlterarDados(ouvinte: () => void): () => void {
+  ouvintes.add(ouvinte);
+  return () => {
+    ouvintes.delete(ouvinte);
+  };
+}
+
 // As gravações são enfileiradas para que um snapshot antigo nunca sobrescreva um mais novo.
 function persistir(): Promise<void> {
+  ouvintes.forEach((ouvinte) => ouvinte());
   if (gravacaoBloqueada) return filaGravacao;
   const snapshot = JSON.stringify(banco);
   filaGravacao = filaGravacao
@@ -488,6 +500,23 @@ const ALERTAS_PADRAO: Record<TipoAlerta, Pick<ConfiguracaoAlerta, 'horario' | 'f
 
 const TIPOS_ALERTA = Object.keys(ALERTAS_PADRAO) as TipoAlerta[];
 
+// Frequências que fazem sentido para cada tipo (a primeira é a padrão).
+export const FREQUENCIAS_ALERTA: Record<TipoAlerta, FrequenciaAlerta[]> = {
+  HIDRATACAO: ['A_CADA_1_HORA', 'A_CADA_2_HORAS', 'A_CADA_3_HORAS'],
+  SONO: ['DIARIA'],
+  CONSUMO: ['MENSAL'],
+};
+
+export type AlteracaoAlerta = Partial<Pick<ConfiguracaoAlerta, 'horario' | 'frequencia' | 'habilitado'>>;
+
+export function validarAlerta(tipoAlerta: TipoAlerta, alteracao: AlteracaoAlerta): string | null {
+  if (alteracao.horario !== undefined && !FORMATO_HORARIO.test(alteracao.horario)) return 'Escolha um horário válido.';
+  if (alteracao.frequencia !== undefined && !FREQUENCIAS_ALERTA[tipoAlerta].includes(alteracao.frequencia)) {
+    return 'Escolha uma frequência válida.';
+  }
+  return null;
+}
+
 // Cria a configuração padrão dos tipos que o usuário ainda não tem, para que os ids fiquem estáveis.
 export function listarConfiguracoesAlerta(idUsuario: string): ConfiguracaoAlerta[] {
   const doUsuario = banco.configuracoesAlerta.filter((c) => c.idUsuario === idUsuario);
@@ -503,10 +532,11 @@ export function listarConfiguracoesAlerta(idUsuario: string): ConfiguracaoAlerta
   return TIPOS_ALERTA.map((tipo) => [...doUsuario, ...faltantes].find((c) => c.tipoAlerta === tipo)!);
 }
 
-export function definirAlertaHabilitado(idUsuario: string, tipoAlerta: TipoAlerta, habilitado: boolean): void {
+export function definirAlerta(idUsuario: string, tipoAlerta: TipoAlerta, alteracao: AlteracaoAlerta): void {
+  exigirValido(validarAlerta(tipoAlerta, alteracao));
   listarConfiguracoesAlerta(idUsuario);
   banco.configuracoesAlerta = banco.configuracoesAlerta.map((c) =>
-    c.idUsuario === idUsuario && c.tipoAlerta === tipoAlerta ? { ...c, habilitado } : c,
+    c.idUsuario === idUsuario && c.tipoAlerta === tipoAlerta ? { ...c, ...alteracao } : c,
   );
   persistir();
 }
