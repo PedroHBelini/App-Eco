@@ -2,6 +2,7 @@ import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { ColorValue } from 'react-native';
+import { useLembretes } from '../../hooks/useLembretes';
 import { useTema } from '../../theme/TemaContext';
 
 type NomeIcone = React.ComponentProps<typeof Ionicons>['name'];
@@ -16,6 +17,7 @@ function icone(ativo: NomeIcone, inativo: NomeIcone) {
 
 export default function TabsLayout() {
   const { cores } = useTema();
+  useLembretes();
 
   return (
     <Tabs

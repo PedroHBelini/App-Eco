@@ -9,6 +9,7 @@ import { Medalha, TipoRecurso, Usuario } from '../models/types';
 import { Cores } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
 import { formatarMesAno } from '../utils/formatacao';
+import { lerNumero } from '../utils/entrada';
 
 interface Props {
   usuario: Usuario;
@@ -39,13 +40,13 @@ export default function Consumo({ usuario }: Props) {
   const [novasMedalhas, setNovasMedalhas] = useState<Medalha[]>([]);
 
   function salvarRegistro() {
-    const entrada = quantidade.trim();
-    const valor = Number(entrada.replace(',', '.'));
+    const valor = lerNumero(quantidade);
     const ano = mesConta.getFullYear();
     const mes = mesConta.getMonth() + 1;
 
-    if (!/^\d+(?:[.,]\d+)?$/.test(entrada) || !validarConsumo(mes, ano, valor)) {
-      setErro('Informe um consumo maior que zero.');
+    const problema = validarConsumo(mes, ano, valor);
+    if (problema) {
+      setErro(problema);
       setFeedback('');
       return;
     }

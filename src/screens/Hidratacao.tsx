@@ -20,6 +20,7 @@ import {
 import { Medalha, RegistroIngestaoAgua, Usuario } from '../models/types';
 import { Cores } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
+import { lerNumero } from '../utils/entrada';
 
 interface Props {
   usuario: Usuario;
@@ -48,8 +49,9 @@ export default function Hidratacao({ usuario }: Props) {
   const registros = listarIngestoesDoDia(usuario.idUsuario).slice().reverse();
 
   function adicionar(quantidadeMl: number) {
-    if (!validarQuantidadeIngestao(quantidadeMl)) {
-      setErro('Informe uma quantidade válida maior que zero.');
+    const problema = validarQuantidadeIngestao(quantidadeMl);
+    if (problema) {
+      setErro(problema);
       return;
     }
 
@@ -78,13 +80,7 @@ export default function Hidratacao({ usuario }: Props) {
   }
 
   function registrarQuantidadeDigitada() {
-    const entrada = quantidade.trim();
-    if (!/^\d+(?:[.,]\d+)?$/.test(entrada)) {
-      setErro('Informe uma quantidade válida maior que zero.');
-      return;
-    }
-
-    adicionar(Number(entrada.replace(',', '.')));
+    adicionar(lerNumero(quantidade));
   }
 
   function alternarEdicaoAtalho() {
@@ -94,10 +90,10 @@ export default function Hidratacao({ usuario }: Props) {
   }
 
   function salvarAtalho() {
-    const entrada = valorAtalho.trim();
-    const ml = Number(entrada);
-    if (!/^\d+$/.test(entrada) || !validarAtalhoHidratacao(ml)) {
-      setErroAtalho('Informe um valor inteiro entre 50 e 2000 ml.');
+    const ml = lerNumero(valorAtalho);
+    const problema = validarAtalhoHidratacao(ml);
+    if (problema) {
+      setErroAtalho(problema);
       return;
     }
     definirAtalhoHidratacao(usuario.idUsuario, ml);

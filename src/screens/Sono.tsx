@@ -7,22 +7,15 @@ import CampoDataHora from '../components/CampoDataHora';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import {
   buscarMetaSonoAtiva,
-  calcularDuracaoSonoMinutos,
   listarRegistrosSono,
   registrarSono,
+  validarSono,
   atualizarGamificacao,
 } from '../data/repository';
 import { Medalha, Usuario } from '../models/types';
 import { useTema } from '../theme/TemaContext';
-import {
-  deDataISO,
-  deHorario,
-  formatarDiaMes,
-  formatarDiaRelativo,
-  formatarHoras,
-  paraDataISO,
-  paraHorario,
-} from '../utils/formatacao';
+import { deDataISO, deHorario, hojeISO, paraDataISO, paraHorario } from '../utils/datas';
+import { formatarDiaMes, formatarDiaRelativo, formatarHoras } from '../utils/formatacao';
 
 interface Props {
   usuario: Usuario;
@@ -42,7 +35,7 @@ export default function Sono({ usuario }: Props) {
   const [dormir, setDormir] = useState('');
   const [acordar, setAcordar] = useState('');
   // Dia em que acordou; por padrão hoje, mas dá para lançar uma noite anterior.
-  const [dataNoite, setDataNoite] = useState(() => paraDataISO(new Date()));
+  const [dataNoite, setDataNoite] = useState(hojeISO);
   const [feedback, setFeedback] = useState('');
   const [erro, setErro] = useState('');
   const [registros, setRegistros] = useState(() => listarRegistrosSono(usuario.idUsuario));
@@ -55,13 +48,9 @@ export default function Sono({ usuario }: Props) {
   const ultimoRegistro = registros[0];
 
   function salvarRegistro() {
-    if (!dormir || !acordar) {
-      setErro('Escolha o horário em que dormiu e o horário em que acordou.');
-      setFeedback('');
-      return;
-    }
-    if (calcularDuracaoSonoMinutos(dormir, acordar) === null) {
-      setErro('O período entre dormir e acordar deve ter até 18 horas.');
+    const problema = validarSono(dormir, acordar, dataNoite);
+    if (problema) {
+      setErro(problema);
       setFeedback('');
       return;
     }
@@ -75,7 +64,7 @@ export default function Sono({ usuario }: Props) {
     setMedalhasDoRegistro(atualizarGamificacao(usuario.idUsuario));
     setDormir('');
     setAcordar('');
-    setDataNoite(paraDataISO(new Date()));
+    setDataNoite(hojeISO());
   }
 
   return (
