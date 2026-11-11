@@ -21,7 +21,7 @@ export default function Cadastro({ onCadastroConcluido }: Props) {
   const [nome, setNome] = useState('');
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
-  const [metaMl, setMetaMl] = useState('2000');
+  const [metaMl, setMetaMl] = useState('');
   const [erro, setErro] = useState('');
   // "Próximo" no teclado leva ao campo seguinte.
   const nicknameRef = useRef<CampoRef>(null);
@@ -90,7 +90,7 @@ export default function Cadastro({ onCadastroConcluido }: Props) {
       />
       <CampoTexto
         ref={metaRef}
-        placeholder="Meta diária de hidratação (ml)"
+        placeholder="Meta diária de hidratação em ml (ex.: 2000)"
         returnKeyType="done"
         onSubmitEditing={handleCadastrar}
         value={metaMl}
