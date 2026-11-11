@@ -57,3 +57,16 @@ export interface ConfiguracaoAlerta {
   frequencia: string;
   habilitado: boolean;
 }
+
+export type TipoRecorde = 'SEQUENCIA_HIDRATACAO' | 'SEQUENCIA_SONO';
+
+// Calculado a partir do histórico (não é gravado), para nunca divergir dos registros.
+export interface Recorde {
+  idUsuario: string;
+  tipoRecorde: TipoRecorde;
+  sequenciaAtual: number; // dias consecutivos batendo a meta até hoje
+  maiorSequencia: number; // maior sequência já alcançada
+  metaDefinida: boolean; // false = ainda não há meta, então não há o que contar
+  hojeConcluido: boolean; // a meta de hoje já foi batida
+  dataAtualizacao: string; // AAAA-MM-DD
+}
