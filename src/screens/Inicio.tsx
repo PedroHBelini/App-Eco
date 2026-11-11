@@ -1,20 +1,24 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
-import { Href, Link } from 'expo-router';
-import React from 'react';
+import { Href, router } from 'expo-router';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import AvisoMedalha from '../components/AvisoMedalha';
 import { sombraCartao, useModuloStyles } from '../components/ModuloLayout';
 import {
+  atualizarGamificacao,
   avaliarDesafioDaSemana,
+  buscarAtalhoHidratacao,
   buscarMetaHidratacaoAtiva,
   buscarMetaSonoAtiva,
   calcularProgresso,
   calcularTotalIngeridoHoje,
   listarConsumos,
   listarRegistrosSono,
+  registrarIngestao,
   unidadeDoRecurso,
 } from '../data/repository';
 import { useAtualizarAoFocar } from '../hooks/useAtualizarAoFocar';
-import { Usuario } from '../models/types';
+import { Medalha, Usuario } from '../models/types';
 import { Cores } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
 import { dataDeHojePorExtenso, formatarHoras, formatarNumero, nomeMes } from '../utils/formatacao';
@@ -49,35 +53,45 @@ function CartaoModulo({ href, icone, titulo, rotuloAcessivel, children }: {
   const estilos = useEstilos(criarEstilos);
   const { cores } = useTema();
   return (
-    <Link href={href} asChild>
-      <Pressable
-        style={({ pressed }) => [estilos.cartao, pressed && estilos.pressionado]}
-        accessibilityRole="button"
-        accessibilityLabel={rotuloAcessivel}
-      >
-        <View style={estilos.cartaoCabecalho}>
-          <View style={estilos.icone}>
-            <Ionicons name={icone} size={20} color={cores.primaria} />
-          </View>
-          <Text style={estilos.cartaoTitulo}>{titulo}</Text>
-          <Ionicons name="chevron-forward" size={18} color={cores.textoSuave} />
+    // Sem <Link asChild>: ele mescla o estilo com o do filho e descarta estilos em forma de função.
+    <Pressable
+      onPress={() => router.push(href)}
+      style={({ pressed }) => [estilos.cartao, pressed && estilos.pressionado]}
+      accessibilityRole="button"
+      accessibilityLabel={rotuloAcessivel}
+    >
+      <View style={estilos.cartaoCabecalho}>
+        <View style={estilos.icone}>
+          <Ionicons name={icone} size={20} color={cores.primaria} />
         </View>
-        {children}
-      </Pressable>
-    </Link>
+        <Text style={estilos.cartaoTitulo}>{titulo}</Text>
+        <Ionicons name="chevron-forward" size={18} color={cores.textoSuave} />
+      </View>
+      {children}
+    </Pressable>
   );
 }
 
 export default function Inicio({ usuario }: Props) {
   const styles = useModuloStyles();
   const estilos = useEstilos(criarEstilos);
-  // Relê os dados ao voltar de Hidratação/Sono/Consumo.
-  useAtualizarAoFocar();
+  const { cores } = useTema();
+  const [novasMedalhas, setNovasMedalhas] = useState<Medalha[]>([]);
+  const [, forcarAtualizacao] = useState(0);
+  // Relê os dados ao voltar de Hidratação/Sono/Consumo e limpa o aviso de medalha antigo.
+  useAtualizarAoFocar(() => setNovasMedalhas([]));
 
   const id = usuario.idUsuario;
   const metaAgua = buscarMetaHidratacaoAtiva(id);
   const totalAgua = calcularTotalIngeridoHoje(id);
   const progressoAgua = calcularProgresso(id);
+  const atalhoAgua = buscarAtalhoHidratacao(id);
+
+  function adicionarMeuCopo() {
+    registrarIngestao(id, atalhoAgua);
+    setNovasMedalhas(atualizarGamificacao(id));
+    forcarAtualizacao((n) => n + 1);
+  }
 
   const metaSono = buscarMetaSonoAtiva(id);
   const ultimaNoite = listarRegistrosSono(id)[0];
@@ -104,7 +118,23 @@ export default function Inicio({ usuario }: Props) {
           <Text style={styles.texto}> de {formatarNumero(metaAgua?.valorMeta ?? 0)} ml</Text>
         </Text>
         <BarraProgresso fracao={progressoAgua} />
+        {/* Toque no botão registra; no resto do cartão, abre a tela de Hidratação. */}
+        <Pressable
+          onPress={adicionarMeuCopo}
+          style={({ pressed }) => [estilos.botaoRapido, pressed && estilos.pressionado]}
+          accessibilityRole="button"
+          accessibilityLabel={`Adicionar meu copo, ${atalhoAgua} ml`}
+          hitSlop={4}
+        >
+          <Ionicons name="add" size={18} color={cores.textoSobrePrimaria} />
+          <Text style={estilos.botaoRapidoTexto}>{atalhoAgua} ml · Meu copo</Text>
+        </Pressable>
       </CartaoModulo>
+      {novasMedalhas.length > 0 ? (
+        <View style={estilos.aviso}>
+          <AvisoMedalha medalhas={novasMedalhas} />
+        </View>
+      ) : null}
 
       <CartaoModulo
         href="/sono"
@@ -203,6 +233,18 @@ function criarEstilos(c: Cores) {
     cartaoTitulo: { flex: 1, color: c.texto, fontSize: 16, fontWeight: '700' },
     destaque: { color: c.texto, fontSize: 22, fontWeight: '800' },
     placar: { flexDirection: 'row', justifyContent: 'space-between' },
+    botaoRapido: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      backgroundColor: c.primaria,
+      borderRadius: 10,
+      paddingVertical: 11,
+      marginTop: 2,
+    },
+    botaoRapidoTexto: { color: c.textoSobrePrimaria, fontSize: 15, fontWeight: '700' },
+    aviso: { marginTop: -10, marginBottom: 18 },
     barraFundo: { height: 8, backgroundColor: c.superficieSuave, borderRadius: 4, overflow: 'hidden' },
     barra: { height: '100%', backgroundColor: c.primaria, borderRadius: 4 },
   });
