@@ -1,6 +1,8 @@
 import { Link } from 'expo-router';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Cores } from '../theme/cores';
+import { useEstilos } from '../theme/TemaContext';
 
 interface Props {
   titulo: string;
@@ -10,6 +12,8 @@ interface Props {
 }
 
 export default function ModuloLayout({ titulo, descricao, children, scrollable = true }: Props) {
+  const styles = useEstilos(criarEstilosLayout);
+
   const cabecalho = (
     <>
       <Link href="/menu" asChild>
@@ -34,47 +38,104 @@ export default function ModuloLayout({ titulo, descricao, children, scrollable =
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       {cabecalho}
       {children}
     </ScrollView>
   );
 }
 
-export const moduloStyles = StyleSheet.create({
-  secao: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#dce7e5', borderRadius: 8, padding: 16, marginBottom: 14 },
-  secaoTitulo: { color: '#173f4f', fontSize: 16, fontWeight: '700', marginBottom: 10 },
-  texto: { color: '#4a6572', fontSize: 14, lineHeight: 20 },
-  rotulo: { color: '#173f4f', fontSize: 13, fontWeight: '600', marginBottom: 6 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#cfe3e8', borderRadius: 8, padding: 12, color: '#173f4f', marginBottom: 12 },
-  botao: { backgroundColor: '#173f4f', borderRadius: 8, padding: 13, alignItems: 'center' },
-  botaoTexto: { color: '#fff', fontWeight: '700' },
-  feedback: { color: '#28764b', fontSize: 13, marginTop: 10 },
-  erro: { color: '#b33b32', fontSize: 13, marginBottom: 10 },
-  linha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  separador: { borderTopWidth: 1, borderTopColor: '#e5ecea', marginTop: 12, paddingTop: 12 },
-  opcao: { flex: 1, alignItems: 'center', borderWidth: 1, borderColor: '#cfe3e8', borderRadius: 8, padding: 11, marginBottom: 14 },
-  opcaoAtiva: { backgroundColor: '#173f4f', borderColor: '#173f4f' },
-  opcaoTexto: { color: '#173f4f', fontWeight: '600' },
-  opcaoTextoAtiva: { color: '#fff' },
-  valor: { color: '#173f4f', fontSize: 15, fontWeight: '700' },
-  numero: { color: '#173f4f', fontSize: 28, fontWeight: '700', marginBottom: 4 },
-  barraFundo: { height: 12, backgroundColor: '#e0eef2', borderRadius: 6, overflow: 'hidden', marginTop: 12 },
-  barra: { height: '100%', backgroundColor: '#2e8bc0' },
-  alertaTexto: { flex: 1 },
-  medalha: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  medalhaSelo: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f4d06f' },
-  medalhaInicial: { color: '#765b13', fontSize: 17, fontWeight: '700' },
-  medalhaDescricao: { flex: 1 },
-  estado: { color: '#7b8f99', fontSize: 12, fontWeight: '600' },
-});
+// Sombra suave dos cartões: elevation no Android, shadow* no iOS.
+export function sombraCartao(cores: Cores) {
+  return Platform.select({
+    android: { elevation: 1 },
+    default: { shadowColor: cores.sombra, shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
+  });
+}
 
-const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 24, paddingTop: 48, paddingBottom: 36, backgroundColor: '#f4faff' },
-  containerFlexivel: { flex: 1 },
-  voltarBotao: { alignSelf: 'flex-start', backgroundColor: '#173f4f', borderRadius: 8, paddingVertical: 11, paddingHorizontal: 16, marginBottom: 24 },
-  voltarTexto: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  cabecalho: { marginBottom: 24 },
-  titulo: { color: '#173f4f', fontSize: 26, fontWeight: '700' },
-  descricao: { color: '#4a6572', fontSize: 14, lineHeight: 20, marginTop: 6 },
-});
+function criarModuloStyles(c: Cores) {
+  return StyleSheet.create({
+    secao: {
+      backgroundColor: c.superficie,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.borda,
+      borderRadius: 14,
+      padding: 18,
+      marginBottom: 16,
+      ...sombraCartao(c),
+    },
+    secaoTitulo: { color: c.texto, fontSize: 17, fontWeight: '700', marginBottom: 10 },
+    texto: { color: c.textoSecundario, fontSize: 14, lineHeight: 20 },
+    rotulo: { color: c.texto, fontSize: 13, fontWeight: '600', marginBottom: 6 },
+    input: {
+      backgroundColor: c.superficie,
+      borderWidth: 1,
+      borderColor: c.bordaForte,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 15,
+      color: c.texto,
+      marginBottom: 12,
+    },
+    botao: { backgroundColor: c.primaria, borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
+    botaoTexto: { color: c.textoSobrePrimaria, fontSize: 15, fontWeight: '700' },
+    feedback: { color: c.sucesso, fontSize: 13, marginTop: 10 },
+    erro: { color: c.erro, fontSize: 13, marginBottom: 10 },
+    linha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+    separador: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.borda, marginTop: 12, paddingTop: 12 },
+    opcao: {
+      flex: 1,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: c.bordaForte,
+      borderRadius: 10,
+      padding: 11,
+      marginBottom: 14,
+    },
+    opcaoAtiva: { backgroundColor: c.primaria, borderColor: c.primaria },
+    opcaoTexto: { color: c.texto, fontWeight: '600' },
+    opcaoTextoAtiva: { color: c.textoSobrePrimaria },
+    valor: { color: c.texto, fontSize: 15, fontWeight: '700' },
+    numero: { color: c.texto, fontSize: 28, fontWeight: '700', marginBottom: 4 },
+    barraFundo: { height: 12, backgroundColor: c.superficieSuave, borderRadius: 6, overflow: 'hidden', marginTop: 12 },
+    barra: { height: '100%', backgroundColor: c.primaria },
+    alertaTexto: { flex: 1 },
+    medalha: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    medalhaSelo: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.ouro,
+    },
+    medalhaInicial: { color: c.ouroTexto, fontSize: 17, fontWeight: '700' },
+    medalhaDescricao: { flex: 1 },
+    estado: { color: c.textoSuave, fontSize: 12, fontWeight: '600' },
+  });
+}
+
+// Estilos compartilhados pelas telas dos módulos, já com as cores do tema atual.
+export function useModuloStyles() {
+  return useEstilos(criarModuloStyles);
+}
+
+function criarEstilosLayout(c: Cores) {
+  return StyleSheet.create({
+    container: { flexGrow: 1, padding: 20, paddingTop: 24, paddingBottom: 36, backgroundColor: c.fundo },
+    containerFlexivel: { flex: 1 },
+    voltarBotao: {
+      alignSelf: 'flex-start',
+      backgroundColor: c.primariaSuave,
+      borderRadius: 10,
+      paddingVertical: 9,
+      paddingHorizontal: 14,
+      marginBottom: 20,
+    },
+    voltarTexto: { color: c.primaria, fontSize: 14, fontWeight: '700' },
+    cabecalho: { marginBottom: 20 },
+    titulo: { color: c.texto, fontSize: 28, fontWeight: '800', letterSpacing: -0.3 },
+    descricao: { color: c.textoSecundario, fontSize: 15, lineHeight: 21, marginTop: 6 },
+  });
+}

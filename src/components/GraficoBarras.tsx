@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Cores } from '../theme/cores';
+import { useEstilos } from '../theme/TemaContext';
 
 export interface BarraGrafico {
   chave: string;
@@ -21,11 +23,6 @@ const LARGURA_EIXO_Y = 44;
 const LARGURA_MAX_BARRA = 24;
 const ESPACO_ENTRE_BARRAS = 2;
 
-const COR_BARRA = '#2e8bc0';
-const COR_GRADE = '#e5ecea';
-const COR_TEXTO = '#173f4f';
-const COR_TEXTO_SUAVE = '#7b8f99';
-
 // Arredonda o topo da escala para um número "limpo" (1, 2, 2,5 ou 5 × 10^n).
 function topoDaEscala(valor: number): number {
   if (valor <= 0) return 1;
@@ -37,6 +34,7 @@ function topoDaEscala(valor: number): number {
 }
 
 export default function GraficoBarras({ barras, formatarValor, meta, rotuloMeta = 'meta', rotuloAcessivel }: Props) {
+  const styles = useEstilos(criarEstilos);
   const [largura, setLargura] = useState(0);
   // Por padrão destaca o ponto mais recente.
   const [selecionada, setSelecionada] = useState(barras.length - 1);
@@ -121,21 +119,23 @@ export default function GraficoBarras({ barras, formatarValor, meta, rotuloMeta 
   );
 }
 
-const styles = StyleSheet.create({
-  detalhe: { color: COR_TEXTO, fontSize: 14, fontWeight: '600', marginBottom: 10 },
-  linhaGrade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COR_GRADE,
-  },
-  rotuloEixoY: { position: 'absolute', left: 0, top: -14, fontSize: 11, color: COR_TEXTO_SUAVE },
-  areaBarras: { position: 'absolute', right: 0, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'flex-end' },
-  slot: { height: '100%', justifyContent: 'flex-end', alignItems: 'center' },
-  barra: { backgroundColor: COR_BARRA, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
-  linhaMeta: { position: 'absolute', right: 0, borderTopWidth: 2, borderTopColor: COR_TEXTO, opacity: 0.7 },
-  rotuloMeta: { position: 'absolute', right: 0, top: -17, fontSize: 11, fontWeight: '600', color: COR_TEXTO },
-  eixoX: { flexDirection: 'row', marginTop: 6, overflow: 'visible' },
-  rotuloEixoX: { fontSize: 11, color: COR_TEXTO_SUAVE, width: 44, textAlign: 'center' },
-});
+function criarEstilos(c: Cores) {
+  return StyleSheet.create({
+    detalhe: { color: c.texto, fontSize: 14, fontWeight: '600', marginBottom: 10 },
+    linhaGrade: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.borda,
+    },
+    rotuloEixoY: { position: 'absolute', left: 0, top: -14, fontSize: 11, color: c.textoSuave },
+    areaBarras: { position: 'absolute', right: 0, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'flex-end' },
+    slot: { height: '100%', justifyContent: 'flex-end', alignItems: 'center' },
+    barra: { backgroundColor: c.primaria, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
+    linhaMeta: { position: 'absolute', right: 0, borderTopWidth: 2, borderTopColor: c.texto, opacity: 0.7 },
+    rotuloMeta: { position: 'absolute', right: 0, top: -17, fontSize: 11, fontWeight: '600', color: c.texto },
+    eixoX: { flexDirection: 'row', marginTop: 6, overflow: 'visible' },
+    rotuloEixoX: { fontSize: 11, color: c.textoSuave, width: 44, textAlign: 'center' },
+  });
+}

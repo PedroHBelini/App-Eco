@@ -4,7 +4,9 @@ import { BONUS_CONCLUSAO } from '../data/catalogoDesafios';
 import { AvaliacaoDesafio, ResultadoDesafio } from '../data/repository';
 import { Desafio, TipoMeta } from '../models/types';
 import { diaDaSemana, formatarDiaMes } from '../utils/formatacao';
-import { moduloStyles } from './ModuloLayout';
+import { Cores } from '../theme/cores';
+import { useEstilos } from '../theme/TemaContext';
+import { useModuloStyles } from './ModuloLayout';
 
 const NOME_META: Record<TipoMeta, string> = { HIDRATACAO: 'hidratação', SONO: 'sono' };
 
@@ -22,6 +24,8 @@ interface Props {
 }
 
 export default function CartaoDesafio({ avaliacao, proximo, anteriores }: Props) {
+  const moduloStyles = useModuloStyles();
+  const styles = useEstilos(criarEstilos);
   const { desafio, dias, atual, pontuacao, concluido, metasFaltando } = avaliacao;
 
   return (
@@ -93,29 +97,31 @@ export default function CartaoDesafio({ avaliacao, proximo, anteriores }: Props)
   );
 }
 
-const styles = StyleSheet.create({
-  cabecalho: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 },
-  nome: { color: '#173f4f', fontSize: 18, fontWeight: '700' },
-  aviso: { color: '#8a5a00', marginTop: 8 },
-  semana: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, marginBottom: 14 },
-  dia: { alignItems: 'center', gap: 4 },
-  bolinha: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#e0eef2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bolinhaCumprida: { backgroundColor: '#2e8bc0' },
-  bolinhaFutura: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#cfe3e8', borderStyle: 'dashed' },
-  bolinhaHoje: { borderWidth: 2, borderColor: '#173f4f' },
-  check: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  rotuloDia: { color: '#7b8f99', fontSize: 11 },
-  rotuloHoje: { color: '#173f4f', fontWeight: '700' },
-  placar: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  concluido: { color: '#28764b', fontWeight: '600' },
-  proximo: { marginTop: 10 },
-  anterior: { marginTop: 6 },
-  anteriorNome: { flex: 1 },
-});
+function criarEstilos(c: Cores) {
+  return StyleSheet.create({
+    cabecalho: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 },
+    nome: { color: c.texto, fontSize: 18, fontWeight: '700' },
+    aviso: { color: c.aviso, marginTop: 8 },
+    semana: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, marginBottom: 14 },
+    dia: { alignItems: 'center', gap: 4 },
+    bolinha: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: c.superficieSuave,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    bolinhaCumprida: { backgroundColor: c.primaria },
+    bolinhaFutura: { backgroundColor: 'transparent', borderWidth: 1, borderColor: c.bordaForte, borderStyle: 'dashed' },
+    bolinhaHoje: { borderWidth: 2, borderColor: c.primaria },
+    check: { color: c.textoSobrePrimaria, fontSize: 14, fontWeight: '700' },
+    rotuloDia: { color: c.textoSuave, fontSize: 11 },
+    rotuloHoje: { color: c.texto, fontWeight: '700' },
+    placar: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+    concluido: { color: c.sucesso, fontWeight: '600' },
+    proximo: { marginTop: 10 },
+    anterior: { marginTop: 6 },
+    anteriorNome: { flex: 1 },
+  });
+}
