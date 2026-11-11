@@ -15,6 +15,7 @@ import {
   listarConsumos,
   listarRegistrosSono,
   registrarIngestao,
+  removerIngestao,
   unidadeDoRecurso,
 } from '../data/repository';
 import { useAtualizarAoFocar } from '../hooks/useAtualizarAoFocar';
@@ -78,8 +79,13 @@ export default function Inicio({ usuario }: Props) {
   const { cores } = useTema();
   const [novasMedalhas, setNovasMedalhas] = useState<Medalha[]>([]);
   const [, forcarAtualizacao] = useState(0);
+  // Último registro feito pelo botão rápido, para poder desfazer um toque acidental.
+  const [ultimoRegistro, setUltimoRegistro] = useState<{ id: string; ml: number } | null>(null);
   // Relê os dados ao voltar de Hidratação/Sono/Consumo e limpa o aviso de medalha antigo.
-  useAtualizarAoFocar(() => setNovasMedalhas([]));
+  useAtualizarAoFocar(() => {
+    setNovasMedalhas([]);
+    setUltimoRegistro(null);
+  });
 
   const id = usuario.idUsuario;
   const metaAgua = buscarMetaHidratacaoAtiva(id);
@@ -88,8 +94,18 @@ export default function Inicio({ usuario }: Props) {
   const atalhoAgua = buscarAtalhoHidratacao(id);
 
   function adicionarMeuCopo() {
-    registrarIngestao(id, atalhoAgua);
+    const registro = registrarIngestao(id, atalhoAgua);
+    setUltimoRegistro({ id: registro.idIngestao, ml: registro.quantidadeMl });
     setNovasMedalhas(atualizarGamificacao(id));
+    forcarAtualizacao((n) => n + 1);
+  }
+
+  function desfazerUltimo() {
+    if (!ultimoRegistro) return;
+    removerIngestao(id, ultimoRegistro.id);
+    atualizarGamificacao(id);
+    setUltimoRegistro(null);
+    setNovasMedalhas([]);
     forcarAtualizacao((n) => n + 1);
   }
 
@@ -129,6 +145,21 @@ export default function Inicio({ usuario }: Props) {
           <Ionicons name="add" size={18} color={cores.textoSobrePrimaria} />
           <Text style={estilos.botaoRapidoTexto}>{atalhoAgua} ml · Meu copo</Text>
         </Pressable>
+        {ultimoRegistro ? (
+          <View style={estilos.desfazerLinha}>
+            <Text style={styles.texto}>{ultimoRegistro.ml} ml registrados.</Text>
+            <Pressable
+              onPress={desfazerUltimo}
+              style={({ pressed }) => [estilos.desfazer, pressed && estilos.pressionado]}
+              accessibilityRole="button"
+              accessibilityLabel={`Desfazer o registro de ${ultimoRegistro.ml} ml`}
+              hitSlop={8}
+            >
+              <Ionicons name="arrow-undo" size={16} color={cores.primaria} />
+              <Text style={estilos.desfazerTexto}>Desfazer</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </CartaoModulo>
       {novasMedalhas.length > 0 ? (
         <View style={estilos.aviso}>
@@ -245,6 +276,9 @@ function criarEstilos(c: Cores) {
     },
     botaoRapidoTexto: { color: c.textoSobrePrimaria, fontSize: 15, fontWeight: '700' },
     aviso: { marginTop: -10, marginBottom: 18 },
+    desfazerLinha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    desfazer: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 6 },
+    desfazerTexto: { color: c.primaria, fontSize: 14, fontWeight: '700' },
     barraFundo: { height: 8, backgroundColor: c.superficieSuave, borderRadius: 4, overflow: 'hidden' },
     barra: { height: '100%', backgroundColor: c.primaria, borderRadius: 4 },
   });
