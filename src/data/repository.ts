@@ -4,9 +4,11 @@ import {
   ConsumoRecurso,
   Meta,
   RegistroIngestaoAgua,
+  Recorde,
   RegistroSono,
   TipoAlerta,
   TipoMeta,
+  TipoRecorde,
   TipoRecurso,
   Usuario,
 } from '../models/types';
@@ -421,4 +423,55 @@ export function serieConsumoMensal(idUsuario: string, tipo: TipoRecurso, meses: 
     );
     return { ano, mes, valor: registro?.quantidade ?? null };
   });
+}
+
+// ---- Gamificação: recordes ----
+
+// Dias do cadastro até hoje (inclusive), no mínimo 1.
+function diasDesdeCadastro(idUsuario: string): number {
+  const inicio = dataCadastroLocal(idUsuario);
+  if (!inicio) return 1;
+  const [ano, mes, dia] = inicio.split('-').map(Number);
+  const hoje = new Date();
+  const diferenca = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime() - new Date(ano, mes - 1, dia).getTime();
+  return Math.max(Math.round(diferenca / 86_400_000) + 1, 1);
+}
+
+function metaAtingida(ponto: PontoDiario): boolean {
+  return ponto.valor !== null && ponto.meta !== null && ponto.valor >= ponto.meta;
+}
+
+function calcularRecorde(idUsuario: string, tipoRecorde: TipoRecorde, serie: PontoDiario[]): Recorde {
+  let maiorSequencia = 0;
+  let corrente = 0;
+  for (const ponto of serie) {
+    corrente = metaAtingida(ponto) ? corrente + 1 : 0;
+    maiorSequencia = Math.max(maiorSequencia, corrente);
+  }
+
+  // Hoje ainda está em andamento: se a meta não foi batida, a sequência termina ontem, mas não quebra.
+  const hoje = serie[serie.length - 1];
+  const hojeConcluido = hoje ? metaAtingida(hoje) : false;
+  let sequenciaAtual = 0;
+  for (let i = serie.length - (hojeConcluido ? 1 : 2); i >= 0 && metaAtingida(serie[i]); i--) {
+    sequenciaAtual++;
+  }
+
+  return {
+    idUsuario,
+    tipoRecorde,
+    sequenciaAtual,
+    maiorSequencia,
+    metaDefinida: serie.some((p) => p.meta !== null),
+    hojeConcluido,
+    dataAtualizacao: hojeLocal(),
+  };
+}
+
+export function calcularRecordes(idUsuario: string): Recorde[] {
+  const dias = diasDesdeCadastro(idUsuario);
+  return [
+    calcularRecorde(idUsuario, 'SEQUENCIA_HIDRATACAO', serieHidratacao(idUsuario, dias)),
+    calcularRecorde(idUsuario, 'SEQUENCIA_SONO', serieSono(idUsuario, dias)),
+  ];
 }

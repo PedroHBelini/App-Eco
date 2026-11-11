@@ -6,5 +6,5 @@ import Gamificacao from '../screens/Gamificacao';
 export default function GamificacaoRoute() {
   const { usuario } = useUsuario();
   if (!usuario) return <Redirect href="/" />;
-  return <Gamificacao />;
+  return <Gamificacao usuario={usuario} />;
 }
