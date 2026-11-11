@@ -40,7 +40,7 @@ export default function CartaoDesafio({ avaliacao, proximo, anteriores }: Props)
 
       {metasFaltando.length > 0 ? (
         <Text style={[moduloStyles.texto, styles.aviso]}>
-          Defina sua meta de {metasFaltando.map((t) => NOME_META[t]).join(' e de ')} para os dias começarem a contar.
+          Defina sua meta de {metasFaltando.map((t) => NOME_META[t]).join(' e de ')} em Ajustes para os dias começarem a contar.
         </Text>
       ) : null}
 

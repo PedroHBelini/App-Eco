@@ -218,7 +218,7 @@ export default function Ajustes({ usuario }: Props) {
   const estilos = useEstilos(criarEstilos);
   const { cores, modo, setModo } = useTema();
   const { setUsuario } = useUsuario();
-  // As metas podem mudar na tela de Sono; a cada foco a seção é recriada com os valores atuais.
+  // A cada foco a seção de metas é recriada com os valores atuais do banco.
   const versao = useAtualizarAoFocar();
   const [configuracoes, setConfiguracoes] = useState(() => listarConfiguracoesAlerta(usuario.idUsuario));
   const coresSwitch = { false: cores.bordaForte, true: cores.primaria };

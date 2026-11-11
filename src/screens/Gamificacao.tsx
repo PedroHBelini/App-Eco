@@ -26,12 +26,12 @@ const TEXTOS_RECORDE: Record<TipoRecorde, { titulo: string; unidade: [string, st
   SEQUENCIA_HIDRATACAO: {
     titulo: 'Hidratação',
     unidade: ['dia', 'dias'],
-    semMeta: 'Defina uma meta de hidratação para começar a contar.',
+    semMeta: 'Defina uma meta de hidratação em Ajustes para começar a contar.',
   },
   SEQUENCIA_SONO: {
     titulo: 'Sono',
     unidade: ['noite', 'noites'],
-    semMeta: 'Defina uma meta de sono na tela de Sono para começar a contar.',
+    semMeta: 'Defina uma meta de sono em Ajustes para começar a contar.',
   },
 };
 
