@@ -1,5 +1,5 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
-import { Href, Link } from 'expo-router';
+import { Href, router } from 'expo-router';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { sombraCartao, useModuloStyles } from '../components/ModuloLayout';
@@ -49,22 +49,22 @@ function CartaoModulo({ href, icone, titulo, rotuloAcessivel, children }: {
   const estilos = useEstilos(criarEstilos);
   const { cores } = useTema();
   return (
-    <Link href={href} asChild>
-      <Pressable
-        style={({ pressed }) => [estilos.cartao, pressed && estilos.pressionado]}
-        accessibilityRole="button"
-        accessibilityLabel={rotuloAcessivel}
-      >
-        <View style={estilos.cartaoCabecalho}>
-          <View style={estilos.icone}>
-            <Ionicons name={icone} size={20} color={cores.primaria} />
-          </View>
-          <Text style={estilos.cartaoTitulo}>{titulo}</Text>
-          <Ionicons name="chevron-forward" size={18} color={cores.textoSuave} />
+    // Sem <Link asChild>: ele mescla o estilo com o do filho e descarta estilos em forma de função.
+    <Pressable
+      onPress={() => router.push(href)}
+      style={({ pressed }) => [estilos.cartao, pressed && estilos.pressionado]}
+      accessibilityRole="button"
+      accessibilityLabel={rotuloAcessivel}
+    >
+      <View style={estilos.cartaoCabecalho}>
+        <View style={estilos.icone}>
+          <Ionicons name={icone} size={20} color={cores.primaria} />
         </View>
-        {children}
-      </Pressable>
-    </Link>
+        <Text style={estilos.cartaoTitulo}>{titulo}</Text>
+        <Ionicons name="chevron-forward" size={18} color={cores.textoSuave} />
+      </View>
+      {children}
+    </Pressable>
   );
 }
 
