@@ -1,7 +1,8 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { router } from 'expo-router';
 import React from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Cores } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
 
@@ -12,6 +13,9 @@ interface Props {
   scrollable?: boolean;
   voltar?: boolean; // telas abertas por cima das abas mostram a seta de voltar
 }
+
+// Espaço entre o campo focado e o topo do teclado.
+export const DISTANCIA_DO_TECLADO = 24;
 
 function voltarParaTelaAnterior() {
   if (router.canGoBack()) router.back();
@@ -52,10 +56,15 @@ export default function ModuloLayout({ titulo, descricao, children, scrollable =
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    // Rola sozinho até o campo focado quando o teclado abre, deixando uma folga acima dele.
+    <KeyboardAwareScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={DISTANCIA_DO_TECLADO}
+    >
       {cabecalho}
       {children}
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

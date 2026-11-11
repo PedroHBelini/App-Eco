@@ -1,7 +1,7 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import CampoTexto from '../components/CampoTexto';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import { useUsuario } from '../context/UsuarioContext';
@@ -29,6 +29,7 @@ interface Props {
 }
 
 type NomeIcone = React.ComponentProps<typeof Ionicons>['name'];
+type CampoRef = React.ComponentRef<typeof TextInput>;
 
 const TEXTOS_ALERTA: Record<TipoAlerta, { titulo: string; descricao: string; icone: NomeIcone }> = {
   HIDRATACAO: { titulo: 'Hidratação', descricao: 'Lembretes para beber água', icone: 'water-outline' },
@@ -69,6 +70,8 @@ function SecaoPerfil({ usuario }: Props) {
   const [nickname, setNickname] = useState(usuario.nickname);
   const [email, setEmail] = useState(usuario.email);
   const [erro, setErro] = useState('');
+  const nicknameRef = useRef<CampoRef>(null);
+  const emailRef = useRef<CampoRef>(null);
 
   function abrirEdicao() {
     setNome(usuario.nome);
@@ -116,16 +119,35 @@ function SecaoPerfil({ usuario }: Props) {
       {editando ? (
         <View style={estilos.formulario}>
           <Text style={styles.rotulo}>Nome</Text>
-          <CampoTexto value={nome} onChangeText={setNome} placeholder="Nome" />
+          <CampoTexto
+            value={nome}
+            onChangeText={setNome}
+            placeholder="Nome"
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => nicknameRef.current?.focus()}
+          />
           <Text style={styles.rotulo}>Nickname (exibido nos rankings)</Text>
-          <CampoTexto value={nickname} onChangeText={setNickname} placeholder="Nickname" autoCapitalize="none" />
+          <CampoTexto
+            ref={nicknameRef}
+            value={nickname}
+            onChangeText={setNickname}
+            placeholder="Nickname"
+            autoCapitalize="none"
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => emailRef.current?.focus()}
+          />
           <Text style={styles.rotulo}>Email</Text>
           <CampoTexto
+            ref={emailRef}
             value={email}
             onChangeText={setEmail}
             placeholder="Email"
             autoCapitalize="none"
             keyboardType="email-address"
+            returnKeyType="done"
+            onSubmitEditing={salvar}
           />
           {erro ? <Text style={styles.erro} accessibilityRole="alert">{erro}</Text> : null}
           <View style={estilos.botoes}>
@@ -153,6 +175,7 @@ function SecaoMetas({ usuario }: Props) {
   const [valorSono, setValorSono] = useState(metaSono ? String(metaSono.valorMeta).replace('.', ',') : '');
   const [erro, setErro] = useState('');
   const [feedback, setFeedback] = useState('');
+  const sonoRef = useRef<CampoRef>(null);
 
   function salvar() {
     const textoAgua = valorAgua.trim();
@@ -189,6 +212,9 @@ function SecaoMetas({ usuario }: Props) {
         }}
         placeholder="Ex.: 2000"
         keyboardType="number-pad"
+        returnKeyType="next"
+        submitBehavior="submit"
+        onSubmitEditing={() => sonoRef.current?.focus()}
       />
       <Text style={styles.rotulo}>Sono por noite (horas)</Text>
       <CampoTexto
@@ -197,8 +223,11 @@ function SecaoMetas({ usuario }: Props) {
           setValorSono(v);
           setFeedback('');
         }}
+        ref={sonoRef}
         placeholder="Ex.: 8"
         keyboardType="decimal-pad"
+        returnKeyType="done"
+        onSubmitEditing={salvar}
       />
       <Text style={[styles.estado, estilos.nota]}>
         Atual: {metaAgua ? `${formatarNumero(metaAgua.valorMeta)} ml` : 'sem meta'} de água ·{' '}
@@ -218,7 +247,7 @@ export default function Ajustes({ usuario }: Props) {
   const estilos = useEstilos(criarEstilos);
   const { cores, modo, setModo } = useTema();
   const { setUsuario } = useUsuario();
-  // As metas podem mudar na tela de Sono; a cada foco a seção é recriada com os valores atuais.
+  // A cada foco a seção de metas é recriada com os valores atuais do banco.
   const versao = useAtualizarAoFocar();
   const [configuracoes, setConfiguracoes] = useState(() => listarConfiguracoesAlerta(usuario.idUsuario));
   const coresSwitch = { false: cores.bordaForte, true: cores.primaria };

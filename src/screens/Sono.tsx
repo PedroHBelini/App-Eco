@@ -1,19 +1,19 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, Text, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
 import CampoDataHora from '../components/CampoDataHora';
-import CampoTexto from '../components/CampoTexto';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import {
   buscarMetaSonoAtiva,
   calcularDuracaoSonoMinutos,
-  definirMetaSono,
   listarRegistrosSono,
   registrarSono,
-  validarMetaSono,
   atualizarGamificacao,
 } from '../data/repository';
 import { Medalha, Usuario } from '../models/types';
+import { useTema } from '../theme/TemaContext';
 import {
   deDataISO,
   deHorario,
@@ -47,14 +47,10 @@ export default function Sono({ usuario }: Props) {
   const [erro, setErro] = useState('');
   const [registros, setRegistros] = useState(() => listarRegistrosSono(usuario.idUsuario));
 
-  const [meta, setMeta] = useState(() => buscarMetaSonoAtiva(usuario.idUsuario));
-  const [metaHoras, setMetaHoras] = useState(meta ? String(meta.valorMeta).replace('.', ',') : '');
-  const [erroMeta, setErroMeta] = useState('');
-  const [feedbackMeta, setFeedbackMeta] = useState('');
-
-  // Separados para o aviso aparecer junto do botão que causou a conquista.
   const [medalhasDoRegistro, setMedalhasDoRegistro] = useState<Medalha[]>([]);
-  const [medalhasDaMeta, setMedalhasDaMeta] = useState<Medalha[]>([]);
+  // A meta é definida em Ajustes; aqui só é lida para comparar com a última noite.
+  const meta = buscarMetaSonoAtiva(usuario.idUsuario);
+  const { cores } = useTema();
 
   const ultimoRegistro = registros[0];
 
@@ -77,25 +73,9 @@ export default function Sono({ usuario }: Props) {
       `${jaExistia ? 'Noite atualizada' : 'Noite registrada'} (${formatarDiaRelativo(deDataISO(dataNoite))}): ${formatarHoras(registro.duracaoHoras)}`,
     );
     setMedalhasDoRegistro(atualizarGamificacao(usuario.idUsuario));
-    setMedalhasDaMeta([]);
     setDormir('');
     setAcordar('');
     setDataNoite(paraDataISO(new Date()));
-  }
-
-  function salvarMeta() {
-    const entrada = metaHoras.trim();
-    const horas = Number(entrada.replace(',', '.'));
-    if (!/^\d+(?:[.,]\d+)?$/.test(entrada) || !validarMetaSono(horas)) {
-      setErroMeta('Informe uma meta entre 0 e 18 horas, como 8 ou 7,5.');
-      setFeedbackMeta('');
-      return;
-    }
-    setMeta(definirMetaSono(usuario.idUsuario, horas));
-    setErroMeta('');
-    setFeedbackMeta('Meta salva.');
-    setMedalhasDaMeta(atualizarGamificacao(usuario.idUsuario));
-    setMedalhasDoRegistro([]);
   }
 
   return (
@@ -142,30 +122,30 @@ export default function Sono({ usuario }: Props) {
       </View>
 
       <View style={styles.secao}>
-        <Text style={styles.secaoTitulo}>Meta de sono</Text>
+        <View style={styles.linha}>
+          <Text style={styles.secaoTitulo}>Meta de sono</Text>
+          <Text style={styles.valor}>{meta ? `${formatarHoras(meta.valorMeta)} por noite` : 'não definida'}</Text>
+        </View>
         {meta && ultimoRegistro ? (
-          <Text style={[styles.texto, { marginBottom: 12 }]}>
+          <Text style={styles.texto}>
             {ultimoRegistro.duracaoHoras >= meta.valorMeta
-              ? `Última noite: meta de ${formatarHoras(meta.valorMeta)} atingida.`
-              : `Última noite: faltaram ${formatarHoras(meta.valorMeta - ultimoRegistro.duracaoHoras)} para a meta.`}
+              ? `Última noite (${formatarDiaMes(ultimoRegistro.dataReferencia)}): meta atingida.`
+              : `Última noite (${formatarDiaMes(ultimoRegistro.dataReferencia)}): faltaram ${formatarHoras(meta.valorMeta - ultimoRegistro.duracaoHoras)} para a meta.`}
           </Text>
         ) : null}
-        <Text style={styles.rotulo}>Horas mínimas por noite</Text>
-        <CampoTexto
-          placeholder="8"
-          value={metaHoras}
-          onChangeText={(valor) => {
-            setMetaHoras(valor);
-            setFeedbackMeta('');
-          }}
-          keyboardType="decimal-pad"
-        />
-        {erroMeta ? <Text style={styles.erro} accessibilityRole="alert">{erroMeta}</Text> : null}
-        <TouchableOpacity accessibilityRole="button" onPress={salvarMeta} style={styles.botao}>
-          <Text style={styles.botaoTexto}>{meta ? 'Atualizar meta' : 'Definir meta'}</Text>
-        </TouchableOpacity>
-        {feedbackMeta ? <Text style={styles.feedback}>{feedbackMeta}</Text> : null}
-        <AvisoMedalha medalhas={medalhasDaMeta} />
+        {!meta ? (
+          <Text style={styles.texto}>Defina uma meta para acompanhar suas noites e participar dos desafios de sono.</Text>
+        ) : null}
+        <Pressable
+          onPress={() => router.navigate('/ajustes')}
+          style={({ pressed }) => [styles.linha, { justifyContent: 'flex-start', gap: 4, marginTop: 12 }, pressed && { opacity: 0.6 }]}
+          accessibilityRole="link"
+          accessibilityLabel={meta ? 'Alterar a meta de sono em Ajustes' : 'Definir a meta de sono em Ajustes'}
+          hitSlop={8}
+        >
+          <Text style={[styles.valor, { color: cores.primaria }]}>{meta ? 'Alterar em Ajustes' : 'Definir em Ajustes'}</Text>
+          <Ionicons name="chevron-forward" size={16} color={cores.primaria} />
+        </Pressable>
       </View>
 
       <View style={styles.secao}>
