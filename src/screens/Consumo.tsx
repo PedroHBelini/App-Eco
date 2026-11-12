@@ -11,6 +11,7 @@ import { Cores } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
 import { formatarMesAno } from '../utils/formatacao';
 import { lerNumero } from '../utils/entrada';
+import { vibrarAposRegistro } from '../utils/vibracao';
 
 interface Props {
   usuario: Usuario;
@@ -57,7 +58,9 @@ export default function Consumo({ usuario }: Props) {
     );
     registrarConsumo(usuario.idUsuario, recurso, mes, ano, valor);
     setRegistros(listarConsumos(usuario.idUsuario));
-    setNovasMedalhas(atualizarGamificacao(usuario.idUsuario));
+    const medalhas = atualizarGamificacao(usuario.idUsuario);
+    setNovasMedalhas(medalhas);
+    vibrarAposRegistro(medalhas.length > 0);
     setQuantidade('');
     setErro('');
     setFeedback(

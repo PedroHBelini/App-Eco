@@ -1,4 +1,5 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
+import Constants from 'expo-constants';
 import { Href, router } from 'expo-router';
 import React from 'react';
 import { Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
@@ -14,6 +15,9 @@ import { formatarHoras, formatarNumero } from '../utils/formatacao';
 interface Props {
   usuario: Usuario;
 }
+
+// Versão do app.json (embutida no build).
+const VERSAO = Constants.expoConfig?.version ?? '1.0.0';
 
 // Item de menu que abre uma subtela: ícone, título, resumo do que está configurado e seta.
 function ItemMenu({ href, icone, titulo, resumo, separador }: {
@@ -101,6 +105,8 @@ export default function Ajustes({ usuario }: Props) {
           </LinhaComIcone>
         </View>
       </View>
+
+      <Text style={estilos.rodape}>Ciclo · versão {VERSAO}</Text>
     </ModuloLayout>
   );
 }
@@ -127,5 +133,6 @@ function criarEstilos(c: Cores) {
       marginLeft: 4,
     },
     pressionado: { opacity: 0.6 },
+    rodape: { color: c.textoSuave, fontSize: 12, textAlign: 'center', marginTop: 8 },
   });
 }

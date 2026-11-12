@@ -23,6 +23,7 @@ import { Medalha, Usuario } from '../models/types';
 import { Cores, coresDoModulo, FONTE_MARCA, Modulo } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
 import { hojeISO } from '../utils/datas';
+import { vibrarAposRegistro } from '../utils/vibracao';
 import { dataDeHojePorExtenso, formatarHoras, formatarNumero, nomeMes } from '../utils/formatacao';
 
 interface Props {
@@ -92,9 +93,12 @@ export default function Inicio({ usuario }: Props) {
   const atalhoAgua = buscarAtalhoHidratacao(id);
 
   function adicionarMeuCopo() {
+    const progressoAntes = calcularProgresso(id);
     const registro = registrarIngestao(id, atalhoAgua);
     setUltimoRegistro({ id: registro.idIngestao, ml: registro.quantidadeMl });
-    setNovasMedalhas(atualizarGamificacao(id));
+    const medalhas = atualizarGamificacao(id);
+    setNovasMedalhas(medalhas);
+    vibrarAposRegistro(medalhas.length > 0 || (progressoAntes < 1 && calcularProgresso(id) >= 1));
     forcarAtualizacao((n) => n + 1);
   }
 

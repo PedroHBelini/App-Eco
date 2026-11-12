@@ -21,6 +21,7 @@ import {
 import { Medalha, RegistroIngestaoAgua, Usuario } from '../models/types';
 import { Cores } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
+import { vibrarAposRegistro } from '../utils/vibracao';
 import { confirmar } from '../utils/confirmar';
 import { lerNumero } from '../utils/entrada';
 
@@ -57,8 +58,11 @@ export default function Hidratacao({ usuario }: Props) {
       return;
     }
 
+    const progressoAntes = calcularProgresso(usuario.idUsuario);
     registrarIngestao(usuario.idUsuario, quantidadeMl);
-    setNovasMedalhas(atualizarGamificacao(usuario.idUsuario));
+    const medalhas = atualizarGamificacao(usuario.idUsuario);
+    setNovasMedalhas(medalhas);
+    vibrarAposRegistro(medalhas.length > 0 || (progressoAntes < 1 && calcularProgresso(usuario.idUsuario) >= 1));
     setQuantidade('');
     setErro('');
     forcarAtualizacao((n) => n + 1);

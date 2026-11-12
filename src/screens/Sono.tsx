@@ -17,6 +17,7 @@ import { Medalha, Usuario } from '../models/types';
 import { useTema } from '../theme/TemaContext';
 import { deDataISO, deHorario, hojeISO, paraDataISO, paraHorario } from '../utils/datas';
 import { formatarDiaMes, formatarDiaRelativo, formatarHoras } from '../utils/formatacao';
+import { vibrarAposRegistro } from '../utils/vibracao';
 
 interface Props {
   usuario: Usuario;
@@ -62,7 +63,9 @@ export default function Sono({ usuario }: Props) {
     setFeedback(
       `${jaExistia ? 'Noite atualizada' : 'Noite registrada'} (${formatarDiaRelativo(deDataISO(dataNoite))}): ${formatarHoras(registro.duracaoHoras)}`,
     );
-    setMedalhasDoRegistro(atualizarGamificacao(usuario.idUsuario));
+    const medalhas = atualizarGamificacao(usuario.idUsuario);
+    setMedalhasDoRegistro(medalhas);
+    vibrarAposRegistro(medalhas.length > 0 || (meta !== undefined && registro.duracaoHoras >= meta.valorMeta));
     setDormir('');
     setAcordar('');
     setDataNoite(hojeISO());

@@ -28,7 +28,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.pedrohbelini.app"
+      "package": "com.pedrohbelini.ciclo"
     },
     "web": {
       "favicon": "./assets/favicon.png"
