@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
 import CampoTexto from '../components/CampoTexto';
+import EstadoVazio from '../components/EstadoVazio';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import {
   atualizarGamificacao,
@@ -205,7 +206,7 @@ export default function Hidratacao({ usuario }: Props) {
             </TouchableOpacity>
           </View>
         )}
-        ListEmptyComponent={<Text style={styles.horario}>Nenhum registro ainda hoje.</Text>}
+        ListEmptyComponent={<EstadoVazio icone="water-outline" texto="Nenhum registro ainda hoje." />}
       />
     </ModuloLayout>
   );

@@ -1,5 +1,7 @@
+import { Ionicons } from '@react-native-vector-icons/ionicons';
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import EstadoVazio from '../components/EstadoVazio';
 import GraficoBarras, { BarraGrafico } from '../components/GraficoBarras';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import { useAtualizarAoFocar } from '../hooks/useAtualizarAoFocar';
@@ -14,8 +16,8 @@ import {
   unidadeDoRecurso,
 } from '../data/repository';
 import { TipoRecurso, Usuario } from '../models/types';
-import { Cores } from '../theme/cores';
-import { useEstilos } from '../theme/TemaContext';
+import { Cores, coresDoModulo, Modulo } from '../theme/cores';
+import { useEstilos, useTema } from '../theme/TemaContext';
 import { diaDaSemana, formatarDiaMes, formatarHoras, formatarNumero, nomeMes } from '../utils/formatacao';
 
 interface Props {
@@ -26,6 +28,24 @@ type Periodo = 'SEMANA' | 'MES';
 
 const DIAS_POR_PERIODO: Record<Periodo, number> = { SEMANA: 7, MES: 30 };
 const MESES_DE_CONSUMO = 6;
+
+type NomeIcone = React.ComponentProps<typeof Ionicons>['name'];
+
+// Título da seção com o ícone na cor do módulo, igual aos cartões do Início.
+function TituloSecao({ titulo, icone, modulo }: { titulo: string; icone: NomeIcone; modulo: Modulo }) {
+  const moduloStyles = useModuloStyles();
+  const styles = useEstilos(criarEstilos);
+  const { cores } = useTema();
+  const cor = coresDoModulo(cores, modulo);
+  return (
+    <View style={styles.tituloSecao}>
+      <View style={[styles.tituloIcone, { backgroundColor: cor.suave }]}>
+        <Ionicons name={icone} size={16} color={cor.forte} />
+      </View>
+      <Text style={[moduloStyles.secaoTitulo, styles.tituloTexto]}>{titulo}</Text>
+    </View>
+  );
+}
 
 // Semana: todos os dias da semana. Mês: um rótulo a cada 7 dias, ancorado em hoje.
 function rotuloDoDia(data: string, indice: number, total: number, periodo: Periodo): string | undefined {
@@ -70,6 +90,7 @@ function comparacaoMensal(pontos: PontoMensal[], unidade: string): string | null
 function GraficoConsumo({ usuario, tipo, titulo }: { usuario: Usuario; tipo: TipoRecurso; titulo: string }) {
   const moduloStyles = useModuloStyles();
   const styles = useEstilos(criarEstilos);
+  const { cores } = useTema();
   const unidade = unidadeDoRecurso(tipo);
   const pontos = serieConsumoMensal(usuario.idUsuario, tipo, MESES_DE_CONSUMO);
   if (pontos.every((p) => p.valor === null)) return null;
@@ -89,6 +110,7 @@ function GraficoConsumo({ usuario, tipo, titulo }: { usuario: Usuario; tipo: Tip
       <GraficoBarras
         barras={barras}
         formatarValor={(v) => formatarNumero(v)}
+        cor={cores.consumo}
         rotuloAcessivel={`Consumo de ${titulo.toLowerCase()} nos últimos ${MESES_DE_CONSUMO} meses. ${comparacao ?? ''}`}
       />
     </View>
@@ -98,6 +120,7 @@ function GraficoConsumo({ usuario, tipo, titulo }: { usuario: Usuario; tipo: Tip
 export default function Relatorios({ usuario }: Props) {
   const moduloStyles = useModuloStyles();
   const styles = useEstilos(criarEstilos);
+  const { cores } = useTema();
   const [periodo, setPeriodo] = useState<Periodo>('SEMANA');
   const dias = DIAS_POR_PERIODO[periodo];
 
@@ -160,7 +183,7 @@ export default function Relatorios({ usuario }: Props) {
       </View>
 
       <View style={moduloStyles.secao}>
-        <Text style={moduloStyles.secaoTitulo}>Hidratação</Text>
+        <TituloSecao titulo="Hidratação" icone="water" modulo="agua" />
         {resumoHidratacao.temAlgumDado ? (
           <>
             <View style={styles.indicadores}>
@@ -176,16 +199,17 @@ export default function Relatorios({ usuario }: Props) {
               meta={metaHidratacao?.valorMeta}
               rotuloMeta={metaHidratacao ? `meta ${formatarNumero(metaHidratacao.valorMeta)} ml` : undefined}
               formatarValor={(v) => formatarNumero(v)}
+              cor={cores.agua}
               rotuloAcessivel={`Água ingerida por dia ${textoPeriodo}. Média de ${formatarNumero(resumoHidratacao.media)} ml, meta atingida em ${resumoHidratacao.naMeta} dias.`}
             />
           </>
         ) : (
-          <Text style={moduloStyles.texto}>Nenhuma ingestão registrada {textoPeriodo}.</Text>
+          <EstadoVazio icone="water-outline" texto={`Nenhuma ingestão registrada ${textoPeriodo}.`} />
         )}
       </View>
 
       <View style={moduloStyles.secao}>
-        <Text style={moduloStyles.secaoTitulo}>Sono</Text>
+        <TituloSecao titulo="Sono" icone="moon" modulo="sono" />
         {resumoSono.quantidade > 0 ? (
           <>
             <View style={styles.indicadores}>
@@ -201,16 +225,17 @@ export default function Relatorios({ usuario }: Props) {
               meta={metaSono?.valorMeta}
               rotuloMeta={metaSono ? `meta ${formatarHoras(metaSono.valorMeta)}` : undefined}
               formatarValor={(v) => `${formatarNumero(v, 1)}h`}
+              cor={cores.sono}
               rotuloAcessivel={`Horas de sono por noite ${textoPeriodo}. Média de ${formatarHoras(resumoSono.media)} em ${resumoSono.quantidade} noites registradas.`}
             />
           </>
         ) : (
-          <Text style={moduloStyles.texto}>Nenhuma noite registrada {textoPeriodo}.</Text>
+          <EstadoVazio icone="moon-outline" texto={`Nenhuma noite registrada ${textoPeriodo}.`} />
         )}
       </View>
 
       <View style={moduloStyles.secao}>
-        <Text style={moduloStyles.secaoTitulo}>Consumo residencial</Text>
+        <TituloSecao titulo="Consumo residencial" icone="flash" modulo="consumo" />
         <Text style={[moduloStyles.texto, styles.legendaConsumo]}>
           Últimos {MESES_DE_CONSUMO} meses, conforme as contas informadas.
         </Text>
@@ -220,7 +245,7 @@ export default function Relatorios({ usuario }: Props) {
             <GraficoConsumo usuario={usuario} tipo="AGUA_RESIDENCIAL" titulo="Água" />
           </>
         ) : (
-          <Text style={moduloStyles.texto}>Nenhuma conta registrada nos últimos {MESES_DE_CONSUMO} meses.</Text>
+          <EstadoVazio icone="flash-outline" texto={`Nenhuma conta registrada nos últimos ${MESES_DE_CONSUMO} meses.`} />
         )}
       </View>
     </ModuloLayout>
@@ -236,5 +261,8 @@ function criarEstilos(c: Cores) {
     legendaConsumo: { marginBottom: 12 },
     blocoConsumo: { marginBottom: 16 },
     comparacao: { marginBottom: 10 },
+    tituloSecao: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+    tituloIcone: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    tituloTexto: { marginBottom: 0 },
   });
 }

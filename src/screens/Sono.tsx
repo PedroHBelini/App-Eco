@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Pressable, Text, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
 import CampoDataHora from '../components/CampoDataHora';
+import EstadoVazio from '../components/EstadoVazio';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import {
   buscarMetaSonoAtiva,
@@ -140,7 +141,7 @@ export default function Sono({ usuario }: Props) {
       <View style={styles.secao}>
         <Text style={styles.secaoTitulo}>Últimas noites</Text>
         {registros.length === 0 ? (
-          <Text style={styles.texto}>Seus registros de sono aparecerão aqui.</Text>
+          <EstadoVazio icone="moon-outline" texto="Seus registros de sono aparecerão aqui." />
         ) : (
           registros.slice(0, REGISTROS_NO_HISTORICO).map((item, index) => (
             <View key={item.idSono} style={[styles.linha, index > 0 && styles.separador]}>

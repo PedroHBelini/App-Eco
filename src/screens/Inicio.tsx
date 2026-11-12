@@ -1,7 +1,7 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { Href, router } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
 import { sombraCartao, useModuloStyles } from '../components/ModuloLayout';
 import {
@@ -20,7 +20,7 @@ import {
 } from '../data/repository';
 import { useAtualizarAoFocar } from '../hooks/useAtualizarAoFocar';
 import { Medalha, Usuario } from '../models/types';
-import { Cores } from '../theme/cores';
+import { Cores, coresDoModulo, FONTE_MARCA, Modulo } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
 import { hojeISO } from '../utils/datas';
 import { dataDeHojePorExtenso, formatarHoras, formatarNumero, nomeMes } from '../utils/formatacao';
@@ -31,24 +31,26 @@ interface Props {
 
 type NomeIcone = React.ComponentProps<typeof Ionicons>['name'];
 
-function BarraProgresso({ fracao }: { fracao: number }) {
+function BarraProgresso({ fracao, cor }: { fracao: number; cor?: string }) {
   const estilos = useEstilos(criarEstilos);
   return (
     <View style={estilos.barraFundo}>
-      <View style={[estilos.barra, { width: `${Math.round(Math.min(fracao, 1) * 100)}%` }]} />
+      <View style={[estilos.barra, { width: `${Math.round(Math.min(fracao, 1) * 100)}%` }, cor ? { backgroundColor: cor } : null]} />
     </View>
   );
 }
 
-function CartaoModulo({ href, icone, titulo, rotuloAcessivel, children }: {
+function CartaoModulo({ href, icone, titulo, modulo, rotuloAcessivel, children }: {
   href: Href;
   icone: NomeIcone;
   titulo: string;
+  modulo?: Modulo; // sem módulo (ex.: desafio), usa a cor primária
   rotuloAcessivel: string;
   children: React.ReactNode;
 }) {
   const estilos = useEstilos(criarEstilos);
   const { cores } = useTema();
+  const cor = modulo ? coresDoModulo(cores, modulo) : { forte: cores.primaria, suave: cores.primariaSuave };
   return (
     // Sem <Link asChild>: ele mescla o estilo com o do filho e descarta estilos em forma de função.
     <Pressable
@@ -58,8 +60,8 @@ function CartaoModulo({ href, icone, titulo, rotuloAcessivel, children }: {
       accessibilityLabel={rotuloAcessivel}
     >
       <View style={estilos.cartaoCabecalho}>
-        <View style={estilos.icone}>
-          <Ionicons name={icone} size={20} color={cores.primaria} />
+        <View style={[estilos.icone, { backgroundColor: cor.suave }]}>
+          <Ionicons name={icone} size={20} color={cor.forte} />
         </View>
         <Text style={estilos.cartaoTitulo}>{titulo}</Text>
         <Ionicons name="chevron-forward" size={18} color={cores.textoSuave} />
@@ -114,6 +116,10 @@ export default function Inicio({ usuario }: Props) {
 
   return (
     <ScrollView contentContainerStyle={estilos.container}>
+      <View style={estilos.marca} accessibilityRole="header" accessibilityLabel="Ciclo">
+        <Image source={require('../../assets/logo.png')} style={estilos.marcaLogo} />
+        <Text style={estilos.marcaNome}>Ciclo</Text>
+      </View>
       <Text style={estilos.data}>{dataDeHojePorExtenso()}</Text>
       <Text style={estilos.saudacao}>Olá, {usuario.nickname}</Text>
 
@@ -123,13 +129,14 @@ export default function Inicio({ usuario }: Props) {
         href="/hidratacao"
         icone="water"
         titulo="Hidratação"
+        modulo="agua"
         rotuloAcessivel={`Hidratação: ${totalAgua} ml de ${metaAgua?.valorMeta ?? 0} ml hoje. Abrir.`}
       >
         <Text style={estilos.destaque}>
           {formatarNumero(totalAgua)} ml
           <Text style={styles.texto}> de {formatarNumero(metaAgua?.valorMeta ?? 0)} ml</Text>
         </Text>
-        <BarraProgresso fracao={progressoAgua} />
+        <BarraProgresso fracao={progressoAgua} cor={cores.agua} />
         {/* Toque no botão registra; no resto do cartão, abre a tela de Hidratação. */}
         <Pressable
           onPress={adicionarMeuCopo}
@@ -167,6 +174,7 @@ export default function Inicio({ usuario }: Props) {
         href="/sono"
         icone="moon"
         titulo="Sono"
+        modulo="sono"
         rotuloAcessivel={`Sono: ${noiteDeHoje ? formatarHoras(noiteDeHoje.duracaoHoras) : 'noite não registrada'}. Abrir.`}
       >
         {noiteDeHoje ? (
@@ -175,7 +183,7 @@ export default function Inicio({ usuario }: Props) {
               {formatarHoras(noiteDeHoje.duracaoHoras)}
               {metaSono ? <Text style={styles.texto}> de {formatarHoras(metaSono.valorMeta)}</Text> : null}
             </Text>
-            {metaSono ? <BarraProgresso fracao={noiteDeHoje.duracaoHoras / metaSono.valorMeta} /> : null}
+            {metaSono ? <BarraProgresso fracao={noiteDeHoje.duracaoHoras / metaSono.valorMeta} cor={cores.sono} /> : null}
           </>
         ) : (
           <Text style={styles.texto}>Registre como foi a sua noite.</Text>
@@ -186,6 +194,7 @@ export default function Inicio({ usuario }: Props) {
         href="/consumo"
         icone="flash"
         titulo="Consumo residencial"
+        modulo="consumo"
         rotuloAcessivel="Consumo residencial. Abrir."
       >
         {ultimaConta ? (
@@ -225,6 +234,9 @@ export default function Inicio({ usuario }: Props) {
 function criarEstilos(c: Cores) {
   return StyleSheet.create({
     container: { flexGrow: 1, padding: 20, paddingTop: 24, paddingBottom: 32, backgroundColor: c.fundo },
+    marca: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 18 },
+    marcaLogo: { width: 28, height: 28 },
+    marcaNome: { fontFamily: FONTE_MARCA, fontSize: 20, color: c.texto },
     data: { color: c.textoSuave, fontSize: 14, fontWeight: '600' },
     saudacao: { color: c.texto, fontSize: 28, fontWeight: '800', letterSpacing: -0.3, marginTop: 2, marginBottom: 16 },
     tituloGrupo: {
@@ -253,7 +265,6 @@ function criarEstilos(c: Cores) {
       width: 36,
       height: 36,
       borderRadius: 10,
-      backgroundColor: c.primariaSuave,
       alignItems: 'center',
       justifyContent: 'center',
     },

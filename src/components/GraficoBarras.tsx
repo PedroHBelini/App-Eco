@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Cores } from '../theme/cores';
-import { useEstilos } from '../theme/TemaContext';
+import { useEstilos, useTema } from '../theme/TemaContext';
 
 export interface BarraGrafico {
   chave: string;
@@ -16,6 +16,7 @@ interface Props {
   meta?: number | null; // linha de referência
   rotuloMeta?: string;
   rotuloAcessivel: string;
+  cor?: string; // cor das barras; padrão: primária
 }
 
 const ALTURA = 150;
@@ -33,8 +34,10 @@ function topoDaEscala(valor: number): number {
   return 10 * potencia;
 }
 
-export default function GraficoBarras({ barras, formatarValor, meta, rotuloMeta = 'meta', rotuloAcessivel }: Props) {
+export default function GraficoBarras({ barras, formatarValor, meta, rotuloMeta = 'meta', rotuloAcessivel, cor }: Props) {
   const styles = useEstilos(criarEstilos);
+  const { cores } = useTema();
+  const corBarra = cor ?? cores.primaria;
   const [largura, setLargura] = useState(0);
   // Por padrão destaca o ponto mais recente.
   const [selecionada, setSelecionada] = useState(barras.length - 1);
@@ -85,6 +88,7 @@ export default function GraficoBarras({ barras, formatarValor, meta, rotuloMeta 
                         {
                           width: larguraBarra,
                           height: Math.max(alturaDe(barra.valor), 2),
+                          backgroundColor: corBarra,
                           opacity: esmaecida ? 0.45 : 1,
                         },
                       ]}
@@ -132,7 +136,7 @@ function criarEstilos(c: Cores) {
     rotuloEixoY: { position: 'absolute', left: 0, top: -14, fontSize: 11, color: c.textoSuave },
     areaBarras: { position: 'absolute', right: 0, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'flex-end' },
     slot: { height: '100%', justifyContent: 'flex-end', alignItems: 'center' },
-    barra: { backgroundColor: c.primaria, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
+    barra: { borderTopLeftRadius: 4, borderTopRightRadius: 4 },
     linhaMeta: { position: 'absolute', right: 0, borderTopWidth: 2, borderTopColor: c.texto, opacity: 0.7 },
     rotuloMeta: { position: 'absolute', right: 0, top: -17, fontSize: 11, fontWeight: '600', color: c.texto },
     eixoX: { flexDirection: 'row', marginTop: 6, overflow: 'visible' },

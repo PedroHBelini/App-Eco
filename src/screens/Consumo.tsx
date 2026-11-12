@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
 import CampoTexto from '../components/CampoTexto';
+import EstadoVazio from '../components/EstadoVazio';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import { listarConsumos, registrarConsumo, unidadeDoRecurso, validarConsumo, atualizarGamificacao } from '../data/repository';
 import { Medalha, TipoRecurso, Usuario } from '../models/types';
@@ -112,7 +113,7 @@ export default function Consumo({ usuario }: Props) {
       </View>
       <View style={styles.secao}>
         <Text style={styles.secaoTitulo}>Histórico</Text>
-        {registros.length === 0 ? <Text style={styles.texto}>Seus registros mensais aparecerão aqui.</Text> : registros.map((item, index) => (
+        {registros.length === 0 ? <EstadoVazio icone="flash-outline" texto="Seus registros mensais aparecerão aqui." /> : registros.map((item, index) => (
           <View key={item.idConsumo} style={[styles.linha, index > 0 && styles.separador]}>
             <Text style={styles.texto}>
               {String(item.mesReferencia).padStart(2, '0')}/{item.anoReferencia} · {nomeRecurso(item.tipoRecurso)}

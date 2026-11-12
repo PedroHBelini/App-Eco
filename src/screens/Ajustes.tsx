@@ -26,7 +26,7 @@ import {
 import { ConfiguracaoAlerta, FrequenciaAlerta, TipoAlerta, Usuario } from '../models/types';
 import { DIA_LEMBRETE_CONSUMO, horariosHidratacao } from '../services/lembretes';
 import { consultarPermissao, EstadoPermissao, pedirPermissao, sincronizarLembretes } from '../services/notificacoes';
-import { Cores } from '../theme/cores';
+import { Cores, coresDoModulo, Modulo } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
 import { formatarHoras, formatarNumero } from '../utils/formatacao';
 import { deHorario, paraHorario } from '../utils/datas';
@@ -40,10 +40,10 @@ interface Props {
 type NomeIcone = React.ComponentProps<typeof Ionicons>['name'];
 type CampoRef = React.ComponentRef<typeof TextInput>;
 
-const TEXTOS_ALERTA: Record<TipoAlerta, { titulo: string; descricao: string; icone: NomeIcone }> = {
-  HIDRATACAO: { titulo: 'Hidratação', descricao: 'Lembretes para beber água', icone: 'water-outline' },
-  SONO: { titulo: 'Sono', descricao: 'Lembretes para sua rotina de descanso', icone: 'moon-outline' },
-  CONSUMO: { titulo: 'Consumo', descricao: 'Avisos para atualizar os dados da conta', icone: 'flash-outline' },
+const TEXTOS_ALERTA: Record<TipoAlerta, { titulo: string; descricao: string; icone: NomeIcone; modulo: Modulo }> = {
+  HIDRATACAO: { titulo: 'Hidratação', descricao: 'Lembretes para beber água', icone: 'water-outline', modulo: 'agua' },
+  SONO: { titulo: 'Sono', descricao: 'Lembretes para sua rotina de descanso', icone: 'moon-outline', modulo: 'sono' },
+  CONSUMO: { titulo: 'Consumo', descricao: 'Avisos para atualizar os dados da conta', icone: 'flash-outline', modulo: 'consumo' },
 };
 
 const ROTULO_FREQUENCIA: Record<FrequenciaAlerta, string> = {
@@ -68,19 +68,21 @@ function resumoAlerta(config: ConfiguracaoAlerta): string {
   }
 }
 
-function LinhaComIcone({ icone, titulo, descricao, children }: {
+function LinhaComIcone({ icone, titulo, descricao, modulo, children }: {
   icone: NomeIcone;
   titulo: string;
   descricao: string;
+  modulo?: Modulo; // sem módulo, usa a cor primária
   children?: React.ReactNode;
 }) {
   const styles = useModuloStyles();
   const estilos = useEstilos(criarEstilos);
   const { cores } = useTema();
+  const cor = modulo ? coresDoModulo(cores, modulo) : { forte: cores.primaria, suave: cores.primariaSuave };
   return (
     <View style={styles.linha}>
-      <View style={estilos.icone}>
-        <Ionicons name={icone} size={20} color={cores.primaria} />
+      <View style={[estilos.icone, { backgroundColor: cor.suave }]}>
+        <Ionicons name={icone} size={20} color={cor.forte} />
       </View>
       <View style={styles.alertaTexto}>
         <Text style={styles.valor}>{titulo}</Text>
@@ -325,7 +327,7 @@ function SecaoAlertas({ usuario }: Props) {
         const horario = deHorario(config.horario) ?? new Date();
         return (
           <View key={config.tipoAlerta} style={index > 0 && styles.separador}>
-            <LinhaComIcone icone={textos.icone} titulo={textos.titulo} descricao={textos.descricao}>
+            <LinhaComIcone icone={textos.icone} titulo={textos.titulo} descricao={textos.descricao} modulo={textos.modulo}>
               <Switch
                 value={config.habilitado}
                 onValueChange={(valor) => alternar(config.tipoAlerta, valor)}
@@ -495,7 +497,6 @@ function criarEstilos(c: Cores) {
       width: 36,
       height: 36,
       borderRadius: 10,
-      backgroundColor: c.primariaSuave,
       alignItems: 'center',
       justifyContent: 'center',
     },
