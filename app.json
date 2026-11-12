@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "app",
+    "name": "Ciclo",
     "slug": "app",
     "version": "1.0.0",
-    "scheme": "app",
+    "scheme": "ciclo",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -11,7 +11,8 @@
       "expo-router",
       "@react-native-vector-icons/ionicons",
       "@react-native-community/datetimepicker",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
@@ -21,13 +22,13 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#E8F5F3",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.pedrohbelini.app"
+      "package": "com.pedrohbelini.ciclo"
     },
     "web": {
       "favicon": "./assets/favicon.png"

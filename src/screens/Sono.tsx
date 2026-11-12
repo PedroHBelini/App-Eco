@@ -1,9 +1,10 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
 import CampoDataHora from '../components/CampoDataHora';
+import EstadoVazio from '../components/EstadoVazio';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import {
   buscarMetaSonoAtiva,
@@ -13,9 +14,11 @@ import {
   atualizarGamificacao,
 } from '../data/repository';
 import { Medalha, Usuario } from '../models/types';
-import { useTema } from '../theme/TemaContext';
+import { Cores } from '../theme/cores';
+import { useEstilos, useTema } from '../theme/TemaContext';
 import { deDataISO, deHorario, hojeISO, paraDataISO, paraHorario } from '../utils/datas';
-import { formatarDiaMes, formatarDiaRelativo, formatarHoras } from '../utils/formatacao';
+import { diaDaSemana, formatarDiaMes, formatarDiaRelativo, formatarHoras } from '../utils/formatacao';
+import { vibrarAposRegistro } from '../utils/vibracao';
 
 interface Props {
   usuario: Usuario;
@@ -32,6 +35,7 @@ function horarioInicial(horas: number, minutos: number) {
 
 export default function Sono({ usuario }: Props) {
   const styles = useModuloStyles();
+  const estilos = useEstilos(criarEstilos);
   const [dormir, setDormir] = useState('');
   const [acordar, setAcordar] = useState('');
   // Dia em que acordou; por padrão hoje, mas dá para lançar uma noite anterior.
@@ -45,7 +49,6 @@ export default function Sono({ usuario }: Props) {
   const meta = buscarMetaSonoAtiva(usuario.idUsuario);
   const { cores } = useTema();
 
-  const ultimoRegistro = registros[0];
 
   function salvarRegistro() {
     const problema = validarSono(dormir, acordar, dataNoite);
@@ -61,16 +64,17 @@ export default function Sono({ usuario }: Props) {
     setFeedback(
       `${jaExistia ? 'Noite atualizada' : 'Noite registrada'} (${formatarDiaRelativo(deDataISO(dataNoite))}): ${formatarHoras(registro.duracaoHoras)}`,
     );
-    setMedalhasDoRegistro(atualizarGamificacao(usuario.idUsuario));
+    const medalhas = atualizarGamificacao(usuario.idUsuario);
+    setMedalhasDoRegistro(medalhas);
+    vibrarAposRegistro(medalhas.length > 0 || (meta !== undefined && registro.duracaoHoras >= meta.valorMeta));
     setDormir('');
     setAcordar('');
     setDataNoite(hojeISO());
   }
 
   return (
-    <ModuloLayout voltar titulo="Sono" descricao="Registre seus horários e acompanhe a duração do descanso.">
+    <ModuloLayout voltar titulo="Sono">
       <View style={styles.secao}>
-        <Text style={styles.secaoTitulo}>Registrar uma noite</Text>
         <Text style={styles.rotulo}>Dia em que acordou</Text>
         <CampoDataHora
           modo="date"
@@ -82,76 +86,109 @@ export default function Sono({ usuario }: Props) {
           placeholder="Escolher dia"
           rotuloAcessivel="Dia em que acordou"
         />
-        <Text style={styles.rotulo}>Horário em que dormiu</Text>
-        <CampoDataHora
-          modo="time"
-          valor={deHorario(dormir)}
-          valorInicial={horarioInicial(23, 0)}
-          onChange={(d) => setDormir(paraHorario(d))}
-          formatar={paraHorario}
-          placeholder="Escolher horário"
-          rotuloAcessivel="Horário em que dormiu"
-        />
-        <Text style={styles.rotulo}>Horário em que acordou</Text>
-        <CampoDataHora
-          modo="time"
-          valor={deHorario(acordar)}
-          valorInicial={horarioInicial(7, 0)}
-          onChange={(d) => setAcordar(paraHorario(d))}
-          formatar={paraHorario}
-          placeholder="Escolher horário"
-          rotuloAcessivel="Horário em que acordou"
-        />
+        <View style={estilos.horarios}>
+          <View style={estilos.horario}>
+            <Text style={styles.rotulo}>Dormiu</Text>
+            <CampoDataHora
+              modo="time"
+              valor={deHorario(dormir)}
+              valorInicial={horarioInicial(23, 0)}
+              onChange={(d) => setDormir(paraHorario(d))}
+              formatar={paraHorario}
+              placeholder="--:--"
+              rotuloAcessivel="Horário em que dormiu"
+            />
+          </View>
+          <View style={estilos.horario}>
+            <Text style={styles.rotulo}>Acordou</Text>
+            <CampoDataHora
+              modo="time"
+              valor={deHorario(acordar)}
+              valorInicial={horarioInicial(7, 0)}
+              onChange={(d) => setAcordar(paraHorario(d))}
+              formatar={paraHorario}
+              placeholder="--:--"
+              rotuloAcessivel="Horário em que acordou"
+            />
+          </View>
+        </View>
         {erro ? <Text style={styles.erro} accessibilityRole="alert">{erro}</Text> : null}
         <TouchableOpacity accessibilityRole="button" onPress={salvarRegistro} style={styles.botao}>
-          <Text style={styles.botaoTexto}>Salvar registro</Text>
+          <Text style={styles.botaoTexto}>Registrar</Text>
         </TouchableOpacity>
         {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
         <AvisoMedalha medalhas={medalhasDoRegistro} />
       </View>
 
       <View style={styles.secao}>
-        <View style={styles.linha}>
-          <Text style={styles.secaoTitulo}>Meta de sono</Text>
-          <Text style={styles.valor}>{meta ? `${formatarHoras(meta.valorMeta)} por noite` : 'não definida'}</Text>
+        <View style={[styles.linha, estilos.cabecalho]}>
+          <Text style={[styles.secaoTitulo, estilos.semMargem]}>Últimas noites</Text>
+          {/* A meta é definida em Ajustes; tocar aqui leva direto para lá. */}
+          <Pressable
+            onPress={() => router.push('/ajustes/metas')}
+            style={({ pressed }) => [estilos.meta, pressed && estilos.pressionado]}
+            accessibilityRole="link"
+            accessibilityLabel={meta ? `Meta de ${formatarHoras(meta.valorMeta)} por noite. Alterar.` : 'Definir meta de sono'}
+            hitSlop={8}
+          >
+            <Ionicons name="flag-outline" size={14} color={cores.primaria} />
+            <Text style={estilos.metaTexto}>{meta ? `meta ${formatarHoras(meta.valorMeta)}` : 'definir meta'}</Text>
+          </Pressable>
         </View>
-        {meta && ultimoRegistro ? (
-          <Text style={styles.texto}>
-            {ultimoRegistro.duracaoHoras >= meta.valorMeta
-              ? `Última noite (${formatarDiaMes(ultimoRegistro.dataReferencia)}): meta atingida.`
-              : `Última noite (${formatarDiaMes(ultimoRegistro.dataReferencia)}): faltaram ${formatarHoras(meta.valorMeta - ultimoRegistro.duracaoHoras)} para a meta.`}
-          </Text>
-        ) : null}
-        {!meta ? (
-          <Text style={styles.texto}>Defina uma meta para acompanhar suas noites e participar dos desafios de sono.</Text>
-        ) : null}
-        <Pressable
-          onPress={() => router.navigate('/ajustes')}
-          style={({ pressed }) => [styles.linha, { justifyContent: 'flex-start', gap: 4, marginTop: 12 }, pressed && { opacity: 0.6 }]}
-          accessibilityRole="link"
-          accessibilityLabel={meta ? 'Alterar a meta de sono em Ajustes' : 'Definir a meta de sono em Ajustes'}
-          hitSlop={8}
-        >
-          <Text style={[styles.valor, { color: cores.primaria }]}>{meta ? 'Alterar em Ajustes' : 'Definir em Ajustes'}</Text>
-          <Ionicons name="chevron-forward" size={16} color={cores.primaria} />
-        </Pressable>
-      </View>
-
-      <View style={styles.secao}>
-        <Text style={styles.secaoTitulo}>Últimas noites</Text>
         {registros.length === 0 ? (
-          <Text style={styles.texto}>Seus registros de sono aparecerão aqui.</Text>
+          <EstadoVazio icone="moon-outline" texto="Seus registros de sono aparecerão aqui." />
         ) : (
-          registros.slice(0, REGISTROS_NO_HISTORICO).map((item, index) => (
-            <View key={item.idSono} style={[styles.linha, index > 0 && styles.separador]}>
-              <Text style={styles.texto}>
-                {formatarDiaMes(item.dataReferencia)} · {item.horarioDormir}–{item.horarioAcordar}
-              </Text>
-              <Text style={styles.valor}>{formatarHoras(item.duracaoHoras)}</Text>
-            </View>
-          ))
+          registros.slice(0, REGISTROS_NO_HISTORICO).map((item, index) => {
+            const naMeta = meta !== undefined && item.duracaoHoras >= meta.valorMeta;
+            return (
+              <View
+                key={item.idSono}
+                style={[styles.linha, index > 0 && styles.separador]}
+                accessible
+                accessibilityLabel={`${formatarDiaMes(item.dataReferencia)}: ${formatarHoras(item.duracaoHoras)}, das ${item.horarioDormir} às ${item.horarioAcordar}${naMeta ? ', meta atingida' : ''}.`}
+              >
+                <View style={estilos.noite}>
+                  <Text style={styles.valor}>
+                    {diaDaSemana(item.dataReferencia)}, {formatarDiaMes(item.dataReferencia)}
+                  </Text>
+                  <Text style={styles.estado}>
+                    {item.horarioDormir} – {item.horarioAcordar}
+                  </Text>
+                </View>
+                <Text style={[styles.valor, naMeta && { color: cores.sono }]}>{formatarHoras(item.duracaoHoras)}</Text>
+                {meta ? (
+                  <Ionicons
+                    name={naMeta ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={18}
+                    color={naMeta ? cores.sono : cores.borda}
+                  />
+                ) : null}
+              </View>
+            );
+          })
         )}
       </View>
     </ModuloLayout>
   );
+}
+
+function criarEstilos(c: Cores) {
+  return StyleSheet.create({
+    horarios: { flexDirection: 'row', gap: 12 },
+    horario: { flex: 1 },
+    cabecalho: { marginBottom: 10 },
+    semMargem: { marginBottom: 0 },
+    meta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: c.primariaSuave,
+      borderRadius: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    metaTexto: { color: c.primaria, fontSize: 12, fontWeight: '700' },
+    pressionado: { opacity: 0.6 },
+    noite: { flex: 1 },
+  });
 }

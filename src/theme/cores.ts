@@ -19,6 +19,13 @@ export interface Cores {
   ouro: string; // medalhas conquistadas
   ouroTexto: string; // texto sobre o ouro
   ouroSuave: string; // fundo do aviso de nova medalha
+  // Cor de cada módulo (ícones, barras de progresso e gráficos), tiradas da logo do Ciclo.
+  agua: string;
+  aguaSuave: string;
+  sono: string;
+  sonoSuave: string;
+  consumo: string;
+  consumoSuave: string;
   sombra: string;
 }
 
@@ -40,6 +47,12 @@ const claro: Cores = {
   ouro: '#f4d06f',
   ouroTexto: '#5e4708',
   ouroSuave: '#fdf4d8',
+  agua: '#2186c4',
+  aguaSuave: '#e1f0fa',
+  sono: '#5a5fc8',
+  sonoSuave: '#e9e9fa',
+  consumo: '#2e8a52',
+  consumoSuave: '#e0f2e6',
   sombra: '#0b2a33',
 };
 
@@ -61,7 +74,31 @@ const escuro: Cores = {
   ouro: '#d9b34a',
   ouroTexto: '#2e2304',
   ouroSuave: '#332b14',
+  agua: '#5cb6ea',
+  aguaSuave: '#163246',
+  sono: '#9c9ff2',
+  sonoSuave: '#25274a',
+  consumo: '#63c98b',
+  consumoSuave: '#173a26',
   sombra: '#000000',
 };
 
 export const TEMAS: Record<ModoTema, Cores> = { claro, escuro };
+
+export type Modulo = 'agua' | 'sono' | 'consumo';
+
+// Par de cores de um módulo: `forte` para ícones e barras, `suave` para o fundo do ícone.
+export function coresDoModulo(c: Cores, modulo: Modulo): { forte: string; suave: string } {
+  switch (modulo) {
+    case 'agua':
+      return { forte: c.agua, suave: c.aguaSuave };
+    case 'sono':
+      return { forte: c.sono, suave: c.sonoSuave };
+    case 'consumo':
+      return { forte: c.consumo, suave: c.consumoSuave };
+  }
+}
+
+// Fonte da marca (título "Ciclo"). Carregada em src/app/_layout.tsx; o resto do app usa a fonte do sistema.
+// Com fonte própria não se usa fontWeight: o peso já vem no arquivo (700 = negrito).
+export const FONTE_MARCA = 'Comfortaa_700Bold';

@@ -1,8 +1,9 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import React, { useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AvisoMedalha from '../components/AvisoMedalha';
 import CampoTexto from '../components/CampoTexto';
+import EstadoVazio from '../components/EstadoVazio';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
 import {
   atualizarGamificacao,
@@ -20,6 +21,8 @@ import {
 import { Medalha, RegistroIngestaoAgua, Usuario } from '../models/types';
 import { Cores } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
+import { vibrarAposRegistro } from '../utils/vibracao';
+import { confirmar } from '../utils/confirmar';
 import { lerNumero } from '../utils/entrada';
 
 interface Props {
@@ -55,8 +58,11 @@ export default function Hidratacao({ usuario }: Props) {
       return;
     }
 
+    const progressoAntes = calcularProgresso(usuario.idUsuario);
     registrarIngestao(usuario.idUsuario, quantidadeMl);
-    setNovasMedalhas(atualizarGamificacao(usuario.idUsuario));
+    const medalhas = atualizarGamificacao(usuario.idUsuario);
+    setNovasMedalhas(medalhas);
+    vibrarAposRegistro(medalhas.length > 0 || (progressoAntes < 1 && calcularProgresso(usuario.idUsuario) >= 1));
     setQuantidade('');
     setErro('');
     forcarAtualizacao((n) => n + 1);
@@ -64,19 +70,12 @@ export default function Hidratacao({ usuario }: Props) {
 
   function confirmarRemocao(registro: RegistroIngestaoAgua) {
     const horario = new Date(registro.dataHora).toLocaleTimeString().slice(0, 5);
-    Alert.alert('Remover registro?', `${registro.quantidadeMl} ml às ${horario} será removido do seu histórico.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Remover',
-        style: 'destructive',
-        onPress: () => {
-          removerIngestao(usuario.idUsuario, registro.idIngestao);
-          atualizarGamificacao(usuario.idUsuario);
-          setNovasMedalhas([]);
-          forcarAtualizacao((n) => n + 1);
-        },
-      },
-    ]);
+    confirmar('Remover registro?', `${registro.quantidadeMl} ml às ${horario} será removido do seu histórico.`, 'Remover', () => {
+      removerIngestao(usuario.idUsuario, registro.idIngestao);
+      atualizarGamificacao(usuario.idUsuario);
+      setNovasMedalhas([]);
+      forcarAtualizacao((n) => n + 1);
+    });
   }
 
   function registrarQuantidadeDigitada() {
@@ -156,7 +155,6 @@ export default function Hidratacao({ usuario }: Props) {
               </TouchableOpacity>
             </View>
             {erroAtalho ? <Text style={[modulo.erro, styles.erroAtalho]} accessibilityRole="alert">{erroAtalho}</Text> : null}
-            <Text style={modulo.estado}>Este botão também aparece no Início para registrar com um toque.</Text>
           </View>
         ) : null}
 
@@ -212,7 +210,7 @@ export default function Hidratacao({ usuario }: Props) {
             </TouchableOpacity>
           </View>
         )}
-        ListEmptyComponent={<Text style={styles.horario}>Nenhum registro ainda hoje.</Text>}
+        ListEmptyComponent={<EstadoVazio icone="water-outline" texto="Nenhum registro ainda hoje." />}
       />
     </ModuloLayout>
   );

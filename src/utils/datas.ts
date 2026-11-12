@@ -43,6 +43,19 @@ export function inicioDaSemana(dataISO: string): string {
   return somarDias(dataISO, -recuo);
 }
 
+// Os 7 dias (segunda a domingo) da semana da data.
+export function datasDaSemana(dataISO: string): string[] {
+  const segunda = inicioDaSemana(dataISO);
+  return Array.from({ length: 7 }, (_, i) => somarDias(segunda, i));
+}
+
+// Todos os dias do mês da data, do dia 1 ao último.
+export function datasDoMes(dataISO: string): string[] {
+  const d = deDataISO(dataISO);
+  const total = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  return Array.from({ length: total }, (_, i) => paraDataISO(new Date(d.getFullYear(), d.getMonth(), i + 1)));
+}
+
 // Date -> 'HH:MM'
 export function paraHorario(data: Date): string {
   return `${String(data.getHours()).padStart(2, '0')}:${String(data.getMinutes()).padStart(2, '0')}`;

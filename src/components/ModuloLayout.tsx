@@ -8,7 +8,7 @@ import { useEstilos, useTema } from '../theme/TemaContext';
 
 interface Props {
   titulo: string;
-  descricao: string;
+  descricao?: string; // informação útil sob o título (ex.: meta do dia); opcional
   children: React.ReactNode;
   scrollable?: boolean;
   voltar?: boolean; // telas abertas por cima das abas mostram a seta de voltar
@@ -41,7 +41,7 @@ export default function ModuloLayout({ titulo, descricao, children, scrollable =
       ) : null}
       <View style={styles.cabecalho}>
         <Text style={styles.titulo}>{titulo}</Text>
-        <Text style={styles.descricao}>{descricao}</Text>
+        {descricao ? <Text style={styles.descricao}>{descricao}</Text> : null}
       </View>
     </>
   );

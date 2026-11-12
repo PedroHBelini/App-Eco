@@ -1,3 +1,4 @@
+import { Comfortaa_700Bold, useFonts } from '@expo-google-fonts/comfortaa';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
@@ -17,6 +18,11 @@ function RaizComTema() {
 }
 
 export default function RootLayout() {
+  // A chave do objeto é o nome usado em fontFamily (FONTE_MARCA).
+  const [fontesCarregadas, erroFontes] = useFonts({ Comfortaa_700Bold });
+  // Espera a fonte (é rápido, vem do próprio app). Se falhar, segue com a fonte do sistema.
+  if (!fontesCarregadas && !erroFontes) return null;
+
   return (
     <SafeAreaProvider>
       {/* Necessário para os KeyboardAwareScrollView rolarem até o campo focado quando o teclado abre. */}
