@@ -190,10 +190,10 @@ export function validarDadosPerfil(dados: DadosPerfil, idIgnorar?: string): stri
   const nome = dados.nome.trim();
   const nickname = dados.nickname.trim();
   const email = dados.email.trim();
-  if (!nome || !nickname || !email) return 'Preencha nome, nickname e email.';
+  if (!nome || !nickname || !email) return 'Preencha nome, apelido e email.';
   if (!FORMATO_EMAIL.test(email)) return 'Informe um email válido.';
   const outros = banco.usuarios.filter((u) => u.idUsuario !== idIgnorar);
-  if (outros.some((u) => u.nickname.toLowerCase() === nickname.toLowerCase())) return 'Este nickname já está em uso.';
+  if (outros.some((u) => u.nickname.toLowerCase() === nickname.toLowerCase())) return 'Este apelido já está em uso.';
   if (outros.some((u) => u.email.toLowerCase() === email.toLowerCase())) return 'Este email já está cadastrado.';
   return null;
 }

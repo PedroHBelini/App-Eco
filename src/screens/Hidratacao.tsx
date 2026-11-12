@@ -150,7 +150,6 @@ export default function Hidratacao({ usuario }: Props) {
               </TouchableOpacity>
             </View>
             {erroAtalho ? <Text style={[modulo.erro, styles.erroAtalho]} accessibilityRole="alert">{erroAtalho}</Text> : null}
-            <Text style={modulo.estado}>Este botão também aparece no Início para registrar com um toque.</Text>
           </View>
         ) : null}
 

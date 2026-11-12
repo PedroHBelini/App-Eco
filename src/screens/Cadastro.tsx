@@ -69,7 +69,7 @@ export default function Cadastro({ onCadastroConcluido }: Props) {
       />
       <CampoTexto
         ref={nicknameRef}
-        placeholder="Nickname (exibido nos rankings)"
+        placeholder="Apelido (exibido nos rankings)"
         value={nickname}
         onChangeText={setNickname}
         autoCapitalize="none"

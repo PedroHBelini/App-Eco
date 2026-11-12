@@ -65,7 +65,7 @@ export default function Consumo({ usuario }: Props) {
   }
 
   return (
-    <ModuloLayout voltar titulo="Consumo residencial" descricao="Informe os valores da sua conta mensal de água e energia.">
+    <ModuloLayout voltar titulo="Consumo residencial">
       <View style={styles.secao}>
         <Text style={styles.secaoTitulo}>Novo registro</Text>
         <View style={styles.linha}>

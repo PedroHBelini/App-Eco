@@ -158,12 +158,12 @@ function SecaoPerfil({ usuario }: Props) {
             submitBehavior="submit"
             onSubmitEditing={() => nicknameRef.current?.focus()}
           />
-          <Text style={styles.rotulo}>Nickname (exibido nos rankings)</Text>
+          <Text style={styles.rotulo}>Apelido (exibido nos rankings)</Text>
           <CampoTexto
             ref={nicknameRef}
             value={nickname}
             onChangeText={setNickname}
-            placeholder="Nickname"
+            placeholder="Apelido"
             autoCapitalize="none"
             returnKeyType="next"
             submitBehavior="submit"
@@ -191,7 +191,7 @@ function SecaoPerfil({ usuario }: Props) {
           </View>
         </View>
       ) : (
-        <Text style={[styles.estado, estilos.privacidade]}>Nos rankings aparece apenas o seu nickname.</Text>
+        <Text style={[styles.estado, estilos.privacidade]}>Nos rankings aparece apenas o seu apelido.</Text>
       )}
     </View>
   );
@@ -225,7 +225,7 @@ function SecaoMetas({ usuario }: Props) {
     if (textoSono && horas !== metaSono?.valorMeta) setMetaSono(definirMetaSono(usuario.idUsuario, horas));
     atualizarGamificacao(usuario.idUsuario);
     setErro('');
-    setFeedback('Metas salvas. Valem a partir de hoje; os dias anteriores mantêm a meta da época.');
+    setFeedback('Metas salvas. Valem a partir de hoje.');
   }
 
   return (
@@ -345,7 +345,7 @@ function SecaoAlertas({ usuario }: Props) {
                   valorInicial={horario}
                   onChange={(d) => alterar(config.tipoAlerta, { horario: paraHorario(d) })}
                   formatar={paraHorario}
-                  placeholder="Escolha o horário"
+                  placeholder="Escolher horário"
                   rotuloAcessivel={`Horário dos lembretes de ${textos.titulo.toLowerCase()}`}
                 />
                 {frequencias.length > 1 ? (
@@ -399,7 +399,7 @@ export default function Ajustes({ usuario }: Props) {
   }
 
   return (
-    <ModuloLayout titulo="Ajustes" descricao="Seu perfil, metas, lembretes e aparência do app.">
+    <ModuloLayout titulo="Ajustes">
       <SecaoPerfil usuario={usuario} />
 
       <Text style={estilos.tituloGrupo}>Metas</Text>

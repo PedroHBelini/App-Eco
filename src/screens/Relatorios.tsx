@@ -142,7 +142,7 @@ export default function Relatorios({ usuario }: Props) {
   const textoPeriodo = periodo === 'SEMANA' ? 'nos últimos 7 dias' : 'nos últimos 30 dias';
 
   return (
-    <ModuloLayout titulo="Relatórios" descricao="Acompanhe seus hábitos e consumo ao longo do tempo.">
+    <ModuloLayout titulo="Relatórios">
       <View style={moduloStyles.linha}>
         {(['SEMANA', 'MES'] as const).map((opcao) => (
           <TouchableOpacity

@@ -124,7 +124,7 @@ export default function Gamificacao({ usuario }: Props) {
   const anteriores = listarDesafiosAnteriores(usuario.idUsuario, 4);
 
   return (
-    <ModuloLayout titulo="Conquistas" descricao="Metas, desafios e recordes para acompanhar sua evolução.">
+    <ModuloLayout titulo="Conquistas">
       <View style={styles.secao}>
         <Text style={styles.secaoTitulo}>Desafio da semana</Text>
         <CartaoDesafio avaliacao={desafio} proximo={proximoDesafio()} anteriores={anteriores} />
