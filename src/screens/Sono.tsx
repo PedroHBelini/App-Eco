@@ -130,7 +130,7 @@ export default function Sono({ usuario }: Props) {
           <Text style={styles.texto}>Defina uma meta para acompanhar suas noites e participar dos desafios de sono.</Text>
         ) : null}
         <Pressable
-          onPress={() => router.navigate('/ajustes')}
+          onPress={() => router.push('/ajustes/metas')}
           style={({ pressed }) => [styles.linha, { justifyContent: 'flex-start', gap: 4, marginTop: 12 }, pressed && { opacity: 0.6 }]}
           accessibilityRole="link"
           accessibilityLabel={meta ? 'Alterar a meta de sono em Ajustes' : 'Definir a meta de sono em Ajustes'}
