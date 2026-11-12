@@ -1,6 +1,6 @@
 import { Ionicons } from '@react-native-vector-icons/ionicons';
 import React, { useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import EstadoVazio from '../components/EstadoVazio';
 import GraficoBarras, { BarraGrafico } from '../components/GraficoBarras';
 import ModuloLayout, { useModuloStyles } from '../components/ModuloLayout';
@@ -10,15 +10,17 @@ import {
   buscarMetaSonoAtiva,
   PontoDiario,
   PontoMensal,
+  dataCadastroLocal,
   serieConsumoMensal,
-  serieHidratacao,
-  serieSono,
+  serieHidratacaoNasDatas,
+  serieSonoNasDatas,
   unidadeDoRecurso,
 } from '../data/repository';
 import { TipoRecurso, Usuario } from '../models/types';
 import { Cores, coresDoModulo, Modulo } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
-import { diaDaSemana, formatarDiaMes, formatarHoras, formatarNumero, nomeMes } from '../utils/formatacao';
+import { datasDaSemana, datasDoMes, deDataISO, hojeISO, paraDataISO, somarDias } from '../utils/datas';
+import { diaDaSemana, formatarDiaMes, formatarHoras, formatarMesAno, formatarNumero, nomeMes } from '../utils/formatacao';
 
 interface Props {
   usuario: Usuario;
@@ -26,7 +28,6 @@ interface Props {
 
 type Periodo = 'SEMANA' | 'MES';
 
-const DIAS_POR_PERIODO: Record<Periodo, number> = { SEMANA: 7, MES: 30 };
 const MESES_DE_CONSUMO = 6;
 
 type NomeIcone = React.ComponentProps<typeof Ionicons>['name'];
@@ -47,10 +48,27 @@ function TituloSecao({ titulo, icone, modulo }: { titulo: string; icone: NomeIco
   );
 }
 
-// Semana: todos os dias da semana. Mês: um rótulo a cada 7 dias, ancorado em hoje.
-function rotuloDoDia(data: string, indice: number, total: number, periodo: Periodo): string | undefined {
+// Semana: todos os dias da semana. Mês: os dias 1, 8, 15, 22 e 29.
+function rotuloDoDia(data: string, periodo: Periodo): string | undefined {
   if (periodo === 'SEMANA') return diaDaSemana(data);
-  return (total - 1 - indice) % 7 === 0 ? formatarDiaMes(data) : undefined;
+  const dia = deDataISO(data).getDate();
+  return (dia - 1) % 7 === 0 ? String(dia) : undefined;
+}
+
+// Semana (segunda a domingo) ou mês do calendário. `deslocamento` 0 = o atual, -1 = o anterior...
+function datasDoPeriodo(periodo: Periodo, deslocamento: number): string[] {
+  const hoje = hojeISO();
+  if (periodo === 'SEMANA') return datasDaSemana(somarDias(hoje, 7 * deslocamento));
+  const d = deDataISO(hoje);
+  return datasDoMes(paraDataISO(new Date(d.getFullYear(), d.getMonth() + deslocamento, 1)));
+}
+
+function nomeDoPeriodo(periodo: Periodo, deslocamento: number, datas: string[]): { titulo: string; detalhe?: string } {
+  const intervalo = `${formatarDiaMes(datas[0])} – ${formatarDiaMes(datas[datas.length - 1])}`;
+  const textoMes = formatarMesAno(deDataISO(datas[0])); // 'novembro de 2026'
+  const mes = textoMes.charAt(0).toUpperCase() + textoMes.slice(1);
+  if (periodo === 'SEMANA') return deslocamento === 0 ? { titulo: 'Esta semana', detalhe: intervalo } : { titulo: intervalo };
+  return deslocamento === 0 ? { titulo: 'Este mês', detalhe: mes } : { titulo: mes };
 }
 
 function resumir(pontos: PontoDiario[]) {
@@ -122,47 +140,64 @@ export default function Relatorios({ usuario }: Props) {
   const styles = useEstilos(criarEstilos);
   const { cores } = useTema();
   const [periodo, setPeriodo] = useState<Periodo>('SEMANA');
-  const dias = DIAS_POR_PERIODO[periodo];
+  const [deslocamento, setDeslocamento] = useState(0);
+  const datas = useMemo(() => datasDoPeriodo(periodo, deslocamento), [periodo, deslocamento]);
+  const hoje = hojeISO();
+  const nome = nomeDoPeriodo(periodo, deslocamento, datas);
+  // Não volta para antes do cadastro nem avança para o futuro.
+  const cadastro = dataCadastroLocal(usuario.idUsuario);
+  const podeVoltar = cadastro !== null && datas[0] > cadastro;
+  const podeAvancar = deslocamento < 0;
+  // Destaca hoje quando está no período; senão, o último dia.
+  const indiceHoje = datas.indexOf(hoje);
+  const indiceInicial = indiceHoje >= 0 ? indiceHoje : datas.length - 1;
+  const chaveGrafico = `${periodo}${deslocamento}`;
 
   // Relê o histórico sempre que a aba volta ao foco (ex.: depois de registrar água).
   const versao = useAtualizarAoFocar();
   const hidratacao = useMemo(
-    () => serieHidratacao(usuario.idUsuario, dias),
+    () => serieHidratacaoNasDatas(usuario.idUsuario, datas),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [usuario.idUsuario, dias, versao],
+    [usuario.idUsuario, datas, versao],
   );
   const sono = useMemo(
-    () => serieSono(usuario.idUsuario, dias),
+    () => serieSonoNasDatas(usuario.idUsuario, datas),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [usuario.idUsuario, dias, versao],
+    [usuario.idUsuario, datas, versao],
   );
   const resumoHidratacao = resumir(hidratacao);
   const resumoSono = resumir(sono);
   const metaHidratacao = buscarMetaHidratacaoAtiva(usuario.idUsuario);
   const metaSono = buscarMetaSonoAtiva(usuario.idUsuario);
 
-  const barrasHidratacao: BarraGrafico[] = hidratacao.map((p, i) => ({
+  const barrasHidratacao: BarraGrafico[] = hidratacao.map((p) => ({
     chave: p.data,
     valor: p.valor,
-    rotuloEixo: rotuloDoDia(p.data, i, hidratacao.length, periodo),
+    futura: p.data > hoje,
+    rotuloEixo: rotuloDoDia(p.data, periodo),
     descricao:
       `${diaDaSemana(p.data)}, ${formatarDiaMes(p.data)} · ` +
-      (p.valor === null
-        ? 'antes do cadastro'
-        : `${formatarNumero(p.valor)} ml${p.meta ? ` de ${formatarNumero(p.meta)} ml` : ''}`),
+      (p.data > hoje
+        ? 'ainda não chegou'
+        : p.valor === null
+          ? 'antes do cadastro'
+          : `${formatarNumero(p.valor)} ml${p.meta ? ` de ${formatarNumero(p.meta)} ml` : ''}`),
   }));
 
-  const barrasSono: BarraGrafico[] = sono.map((p, i) => ({
+  const barrasSono: BarraGrafico[] = sono.map((p) => ({
     chave: p.data,
     valor: p.valor,
-    rotuloEixo: rotuloDoDia(p.data, i, sono.length, periodo),
-    descricao: `${diaDaSemana(p.data)}, ${formatarDiaMes(p.data)} · ${p.valor === null ? 'sem registro' : formatarHoras(p.valor)}`,
+    futura: p.data > hoje,
+    rotuloEixo: rotuloDoDia(p.data, periodo),
+    descricao:
+      `${diaDaSemana(p.data)}, ${formatarDiaMes(p.data)} · ` +
+      (p.data > hoje ? 'ainda não chegou' : p.valor === null ? 'sem registro' : formatarHoras(p.valor)),
   }));
 
   const temConsumo = (['ENERGIA', 'AGUA_RESIDENCIAL'] as const).some((tipo) =>
     serieConsumoMensal(usuario.idUsuario, tipo, MESES_DE_CONSUMO).some((p) => p.valor !== null),
   );
-  const textoPeriodo = periodo === 'SEMANA' ? 'nos últimos 7 dias' : 'nos últimos 30 dias';
+  const textoPeriodo = deslocamento !== 0 ? 'neste período' : periodo === 'SEMANA' ? 'nesta semana' : 'neste mês';
 
   return (
     <ModuloLayout titulo="Relatórios">
@@ -170,7 +205,10 @@ export default function Relatorios({ usuario }: Props) {
         {(['SEMANA', 'MES'] as const).map((opcao) => (
           <TouchableOpacity
             key={opcao}
-            onPress={() => setPeriodo(opcao)}
+            onPress={() => {
+              setPeriodo(opcao);
+              setDeslocamento(0);
+            }}
             style={[moduloStyles.opcao, periodo === opcao && moduloStyles.opcaoAtiva]}
             accessibilityRole="button"
             accessibilityState={{ selected: periodo === opcao }}
@@ -180,6 +218,35 @@ export default function Relatorios({ usuario }: Props) {
             </Text>
           </TouchableOpacity>
         ))}
+      </View>
+
+      <View style={styles.navegacao}>
+        <Pressable
+          onPress={() => setDeslocamento((d) => d - 1)}
+          disabled={!podeVoltar}
+          style={[styles.seta, !podeVoltar && styles.desabilitada]}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={periodo === 'SEMANA' ? 'Semana anterior' : 'Mês anterior'}
+          accessibilityState={{ disabled: !podeVoltar }}
+        >
+          <Ionicons name="chevron-back" size={22} color={cores.primaria} />
+        </Pressable>
+        <View style={styles.periodoNome} accessibilityLiveRegion="polite">
+          <Text style={styles.periodoTitulo}>{nome.titulo}</Text>
+          {nome.detalhe ? <Text style={moduloStyles.estado}>{nome.detalhe}</Text> : null}
+        </View>
+        <Pressable
+          onPress={() => setDeslocamento((d) => d + 1)}
+          disabled={!podeAvancar}
+          style={[styles.seta, !podeAvancar && styles.desabilitada]}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={periodo === 'SEMANA' ? 'Próxima semana' : 'Próximo mês'}
+          accessibilityState={{ disabled: !podeAvancar }}
+        >
+          <Ionicons name="chevron-forward" size={22} color={cores.primaria} />
+        </Pressable>
       </View>
 
       <View style={moduloStyles.secao}>
@@ -194,7 +261,8 @@ export default function Relatorios({ usuario }: Props) {
               />
             </View>
             <GraficoBarras
-              key={periodo}
+              key={chaveGrafico}
+              indiceInicial={indiceInicial}
               barras={barrasHidratacao}
               meta={metaHidratacao?.valorMeta}
               rotuloMeta={metaHidratacao ? `meta ${formatarNumero(metaHidratacao.valorMeta)} ml` : undefined}
@@ -220,7 +288,8 @@ export default function Relatorios({ usuario }: Props) {
               />
             </View>
             <GraficoBarras
-              key={periodo}
+              key={chaveGrafico}
+              indiceInicial={indiceInicial}
               barras={barrasSono}
               meta={metaSono?.valorMeta}
               rotuloMeta={metaSono ? `meta ${formatarHoras(metaSono.valorMeta)}` : undefined}
@@ -236,9 +305,6 @@ export default function Relatorios({ usuario }: Props) {
 
       <View style={moduloStyles.secao}>
         <TituloSecao titulo="Consumo residencial" icone="flash" modulo="consumo" />
-        <Text style={[moduloStyles.texto, styles.legendaConsumo]}>
-          Últimos {MESES_DE_CONSUMO} meses, conforme as contas informadas.
-        </Text>
         {temConsumo ? (
           <>
             <GraficoConsumo usuario={usuario} tipo="ENERGIA" titulo="Energia" />
@@ -258,9 +324,13 @@ function criarEstilos(c: Cores) {
     indicador: { flex: 1, backgroundColor: c.superficieSuave, borderRadius: 12, padding: 14 },
     indicadorRotulo: { color: c.textoSecundario, fontSize: 12 },
     indicadorValor: { color: c.texto, fontSize: 20, fontWeight: '700', marginTop: 2 },
-    legendaConsumo: { marginBottom: 12 },
     blocoConsumo: { marginBottom: 16 },
     comparacao: { marginBottom: 10 },
+    navegacao: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+    seta: { padding: 6 },
+    desabilitada: { opacity: 0.3 },
+    periodoNome: { alignItems: 'center' },
+    periodoTitulo: { color: c.texto, fontSize: 16, fontWeight: '700' },
     tituloSecao: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
     tituloIcone: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
     tituloTexto: { marginBottom: 0 },

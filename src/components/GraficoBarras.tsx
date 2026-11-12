@@ -8,6 +8,7 @@ export interface BarraGrafico {
   valor: number | null; // null = sem dado (não desenha barra)
   rotuloEixo?: string; // texto sob a barra; omitir para não poluir o eixo
   descricao: string; // mostrado ao tocar na barra
+  futura?: boolean; // dia que ainda não chegou: aparece pontilhado
 }
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
   rotuloMeta?: string;
   rotuloAcessivel: string;
   cor?: string; // cor das barras; padrão: primária
+  indiceInicial?: number; // barra destacada ao abrir; padrão: a última
 }
 
 const ALTURA = 150;
@@ -34,13 +36,13 @@ function topoDaEscala(valor: number): number {
   return 10 * potencia;
 }
 
-export default function GraficoBarras({ barras, formatarValor, meta, rotuloMeta = 'meta', rotuloAcessivel, cor }: Props) {
+export default function GraficoBarras({ barras, formatarValor, meta, rotuloMeta = 'meta', rotuloAcessivel, cor, indiceInicial }: Props) {
   const styles = useEstilos(criarEstilos);
   const { cores } = useTema();
   const corBarra = cor ?? cores.primaria;
   const [largura, setLargura] = useState(0);
   // Por padrão destaca o ponto mais recente.
-  const [selecionada, setSelecionada] = useState(barras.length - 1);
+  const [selecionada, setSelecionada] = useState(indiceInicial ?? barras.length - 1);
 
   const maiorValor = Math.max(0, ...barras.map((b) => b.valor ?? 0), meta ?? 0);
   const topo = topoDaEscala(maiorValor * 1.05);
@@ -93,6 +95,8 @@ export default function GraficoBarras({ barras, formatarValor, meta, rotuloMeta 
                         },
                       ]}
                     />
+                  ) : barra.futura ? (
+                    <View style={[styles.futura, { width: larguraBarra }]} />
                   ) : null}
                 </Pressable>
               );
@@ -137,6 +141,14 @@ function criarEstilos(c: Cores) {
     areaBarras: { position: 'absolute', right: 0, top: 0, bottom: 0, flexDirection: 'row', alignItems: 'flex-end' },
     slot: { height: '100%', justifyContent: 'flex-end', alignItems: 'center' },
     barra: { borderTopLeftRadius: 4, borderTopRightRadius: 4 },
+    futura: {
+      height: 10,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: c.bordaForte,
+      borderTopLeftRadius: 4,
+      borderTopRightRadius: 4,
+    },
     linhaMeta: { position: 'absolute', right: 0, borderTopWidth: 2, borderTopColor: c.texto, opacity: 0.7 },
     rotuloMeta: { position: 'absolute', right: 0, top: -17, fontSize: 11, fontWeight: '600', color: c.texto },
     eixoX: { flexDirection: 'row', marginTop: 6, overflow: 'visible' },

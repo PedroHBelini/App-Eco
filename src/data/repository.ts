@@ -572,7 +572,7 @@ function metaVigenteEm(idUsuario: string, tipo: TipoMeta, data: string): number 
   return valor;
 }
 
-function dataCadastroLocal(idUsuario: string): string | null {
+export function dataCadastroLocal(idUsuario: string): string | null {
   const usuario = banco.usuarios.find((u) => u.idUsuario === idUsuario);
   return usuario ? paraDataISO(new Date(usuario.dataCadastro)) : null;
 }
@@ -583,6 +583,20 @@ export function serieHidratacao(idUsuario: string, dias: number): PontoDiario[] 
 
 export function serieSono(idUsuario: string, dias: number): PontoDiario[] {
   return pontosSono(idUsuario, ultimosDias(dias));
+}
+
+// Séries para um período do calendário (semana ou mês). Dias que ainda não chegaram ficam sem dado.
+function semFuturo(pontos: PontoDiario[]): PontoDiario[] {
+  const hoje = hojeISO();
+  return pontos.map((p) => (p.data > hoje ? { ...p, valor: null } : p));
+}
+
+export function serieHidratacaoNasDatas(idUsuario: string, datas: string[]): PontoDiario[] {
+  return semFuturo(pontosHidratacao(idUsuario, datas));
+}
+
+export function serieSonoNasDatas(idUsuario: string, datas: string[]): PontoDiario[] {
+  return semFuturo(pontosSono(idUsuario, datas));
 }
 
 function pontosHidratacao(idUsuario: string, datas: string[]): PontoDiario[] {

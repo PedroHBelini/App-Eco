@@ -9,7 +9,7 @@ import { listarConsumos, registrarConsumo, unidadeDoRecurso, validarConsumo, atu
 import { Medalha, TipoRecurso, Usuario } from '../models/types';
 import { Cores } from '../theme/cores';
 import { useEstilos, useTema } from '../theme/TemaContext';
-import { formatarMesAno } from '../utils/formatacao';
+import { formatarMesAno, formatarNumero, nomeMes } from '../utils/formatacao';
 import { lerNumero } from '../utils/entrada';
 import { vibrarAposRegistro } from '../utils/vibracao';
 
@@ -17,8 +17,26 @@ interface Props {
   usuario: Usuario;
 }
 
-function nomeRecurso(tipo: TipoRecurso): string {
-  return tipo === 'ENERGIA' ? 'Energia' : 'Água';
+type NomeIcone = React.ComponentProps<typeof Ionicons>['name'];
+
+const RECURSOS: Record<TipoRecurso, { nome: string; icone: NomeIcone }> = {
+  ENERGIA: { nome: 'Energia', icone: 'flash' },
+  AGUA_RESIDENCIAL: { nome: 'Água', icone: 'water' },
+};
+
+// A água pode ser informada em m³ (como vem na conta) ou em litros; sempre é guardada em m³.
+type UnidadeAgua = 'M3' | 'LITROS';
+const LITROS_POR_M3 = 1000;
+
+const PLACEHOLDER: Record<'ENERGIA' | UnidadeAgua, string> = {
+  ENERGIA: 'Ex.: 125,5',
+  M3: 'Ex.: 12,5',
+  LITROS: 'Ex.: 12500',
+};
+
+// Energia com 1 casa; água com até 3, para não perder o que foi informado em litros.
+function formatarQuantidade(tipo: TipoRecurso, quantidade: number): string {
+  return `${formatarNumero(quantidade, tipo === 'ENERGIA' ? 1 : 3)} ${unidadeDoRecurso(tipo)}`;
 }
 
 export default function Consumo({ usuario }: Props) {
@@ -27,6 +45,8 @@ export default function Consumo({ usuario }: Props) {
   const { cores } = useTema();
   const agora = new Date();
   const [recurso, setRecurso] = useState<TipoRecurso>('ENERGIA');
+  const [unidadeAgua, setUnidadeAgua] = useState<UnidadeAgua>('M3');
+  const emLitros = recurso === 'AGUA_RESIDENCIAL' && unidadeAgua === 'LITROS';
   // Mês da conta, escolhido com as setas (sem digitar). Não passa do mês atual.
   const [mesConta, setMesConta] = useState(() => new Date(agora.getFullYear(), agora.getMonth(), 1));
   const ehMesAtual = mesConta.getFullYear() === agora.getFullYear() && mesConta.getMonth() === agora.getMonth();
@@ -42,7 +62,8 @@ export default function Consumo({ usuario }: Props) {
   const [novasMedalhas, setNovasMedalhas] = useState<Medalha[]>([]);
 
   function salvarRegistro() {
-    const valor = lerNumero(quantidade);
+    const informado = lerNumero(quantidade);
+    const valor = emLitros ? informado / LITROS_POR_M3 : informado;
     const ano = mesConta.getFullYear();
     const mes = mesConta.getMonth() + 1;
 
@@ -64,22 +85,34 @@ export default function Consumo({ usuario }: Props) {
     setQuantidade('');
     setErro('');
     setFeedback(
-      `${nomeRecurso(recurso)} de ${String(mes).padStart(2, '0')}/${ano} ${jaExistia ? 'atualizado' : 'registrado'}.`,
+      `${RECURSOS[recurso].nome} de ${nomeMes(mes)}/${ano} ${jaExistia ? 'atualizada' : 'registrada'}: ${formatarQuantidade(recurso, valor)}.`,
     );
   }
 
   return (
     <ModuloLayout voltar titulo="Consumo residencial">
       <View style={styles.secao}>
-        <Text style={styles.secaoTitulo}>Novo registro</Text>
         <View style={styles.linha}>
-          {(['ENERGIA', 'AGUA_RESIDENCIAL'] as const).map((tipo) => (
-            <TouchableOpacity key={tipo} onPress={() => setRecurso(tipo)} style={[styles.opcao, recurso === tipo && styles.opcaoAtiva]}>
-              <Text style={[styles.opcaoTexto, recurso === tipo && styles.opcaoTextoAtiva]}>{nomeRecurso(tipo)}</Text>
-            </TouchableOpacity>
-          ))}
+          {(['ENERGIA', 'AGUA_RESIDENCIAL'] as const).map((tipo) => {
+            const ativo = recurso === tipo;
+            return (
+              <TouchableOpacity
+                key={tipo}
+                onPress={() => {
+                  setRecurso(tipo);
+                  setErro('');
+                }}
+                style={[styles.opcao, estilos.recurso, ativo && styles.opcaoAtiva]}
+                accessibilityRole="button"
+                accessibilityState={{ selected: ativo }}
+              >
+                <Ionicons name={RECURSOS[tipo].icone} size={16} color={ativo ? cores.textoSobrePrimaria : cores.texto} />
+                <Text style={[styles.opcaoTexto, ativo && styles.opcaoTextoAtiva]}>{RECURSOS[tipo].nome}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-        <Text style={styles.rotulo}>Mês de referência</Text>
+        <Text style={styles.rotulo}>Mês da conta</Text>
         <View style={[styles.input, estilos.seletorMes]}>
           <Pressable
             onPress={() => mudarMes(-1)}
@@ -105,25 +138,62 @@ export default function Consumo({ usuario }: Props) {
             <Ionicons name="chevron-forward" size={22} color={cores.primaria} />
           </Pressable>
         </View>
-        <Text style={styles.rotulo}>Consumo ({unidadeDoRecurso(recurso)})</Text>
-        <CampoTexto value={quantidade} onChangeText={setQuantidade} keyboardType="decimal-pad" placeholder="Ex.: 125,5" />
+        <View style={estilos.rotuloLinha}>
+          <Text style={[styles.rotulo, estilos.semMargem]}>
+            Consumo{recurso === 'ENERGIA' ? ' (kWh)' : ''}
+          </Text>
+          {recurso === 'AGUA_RESIDENCIAL' ? (
+            <View style={estilos.unidades}>
+              {(['M3', 'LITROS'] as const).map((u) => {
+                const ativa = unidadeAgua === u;
+                return (
+                  <Pressable
+                    key={u}
+                    onPress={() => setUnidadeAgua(u)}
+                    style={[estilos.unidade, ativa && estilos.unidadeAtiva]}
+                    hitSlop={6}
+                    accessibilityRole="button"
+                    accessibilityLabel={u === 'M3' ? 'Informar em metros cúbicos' : 'Informar em litros'}
+                    accessibilityState={{ selected: ativa }}
+                  >
+                    <Text style={[estilos.unidadeTexto, ativa && estilos.unidadeTextoAtiva]}>{u === 'M3' ? 'm³' : 'litros'}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+        </View>
+        <CampoTexto
+          value={quantidade}
+          onChangeText={setQuantidade}
+          keyboardType="decimal-pad"
+          placeholder={PLACEHOLDER[recurso === 'ENERGIA' ? 'ENERGIA' : unidadeAgua]}
+        />
         {erro ? <Text style={styles.erro} accessibilityRole="alert">{erro}</Text> : null}
-        <TouchableOpacity onPress={salvarRegistro} style={styles.botao}>
-          <Text style={styles.botaoTexto}>Registrar consumo</Text>
+        <TouchableOpacity onPress={salvarRegistro} style={styles.botao} accessibilityRole="button">
+          <Text style={styles.botaoTexto}>Registrar</Text>
         </TouchableOpacity>
         {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
         <AvisoMedalha medalhas={novasMedalhas} />
       </View>
+
       <View style={styles.secao}>
         <Text style={styles.secaoTitulo}>Histórico</Text>
-        {registros.length === 0 ? <EstadoVazio icone="flash-outline" texto="Seus registros mensais aparecerão aqui." /> : registros.map((item, index) => (
-          <View key={item.idConsumo} style={[styles.linha, index > 0 && styles.separador]}>
-            <Text style={styles.texto}>
-              {String(item.mesReferencia).padStart(2, '0')}/{item.anoReferencia} · {nomeRecurso(item.tipoRecurso)}
-            </Text>
-            <Text style={styles.valor}>{item.quantidade} {item.unidade}</Text>
-          </View>
-        ))}
+        {registros.length === 0 ? (
+          <EstadoVazio icone="flash-outline" texto="Seus registros mensais aparecerão aqui." />
+        ) : (
+          registros.map((item, index) => (
+            <View key={item.idConsumo} style={[styles.linha, estilos.historico, index > 0 && styles.separador]}>
+              <View style={[estilos.historicoIcone, { backgroundColor: cores.consumoSuave }]}>
+                <Ionicons name={RECURSOS[item.tipoRecurso].icone} size={14} color={cores.consumo} />
+              </View>
+              <Text style={[styles.texto, estilos.historicoMes]}>
+                {nomeMes(item.mesReferencia)}/{item.anoReferencia}
+              </Text>
+              <Text style={styles.valor}>{formatarQuantidade(item.tipoRecurso, item.quantidade)}</Text>
+            </View>
+          ))
+        )}
       </View>
     </ModuloLayout>
   );
@@ -135,5 +205,16 @@ function criarEstilos(c: Cores) {
     seta: { padding: 4 },
     desabilitada: { opacity: 0.3 },
     mes: { color: c.texto, fontSize: 15, fontWeight: '600', textTransform: 'capitalize' },
+    recurso: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
+    rotuloLinha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+    semMargem: { marginBottom: 0 },
+    unidades: { flexDirection: 'row', gap: 4 },
+    unidade: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 12, borderWidth: 1, borderColor: c.bordaForte },
+    unidadeAtiva: { backgroundColor: c.primaria, borderColor: c.primaria },
+    unidadeTexto: { color: c.texto, fontSize: 12, fontWeight: '600' },
+    unidadeTextoAtiva: { color: c.textoSobrePrimaria },
+    historico: { justifyContent: 'flex-start' },
+    historicoIcone: { width: 26, height: 26, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+    historicoMes: { flex: 1 },
   });
 }
